@@ -214,7 +214,9 @@ public class BenchmarkService
             "DeserializeStdDevMs", "DeserializeP95Ms", "DeserializeP99Ms",
             "RoundTripMeanMs", "RoundTripMedianMs", "RoundTripMinMs", "RoundTripMaxMs",
             "RoundTripStdDevMs", "RoundTripP95Ms", "RoundTripP99Ms",
-            "MemSerializePeakBytes", "MemDeserializePeakBytes", "MemTotalPeakBytes"
+            "MemSerializePeakBytes", "MemDeserializePeakBytes", "MemTotalPeakBytes",
+            "GzipBytes", "GzipRatio", "ZstdBytes", "ZstdRatio",
+            "SerMsgPerSec", "DeserMsgPerSec", "SerMbPerSec", "DeserMbPerSec"
         ));
 
         // Data rijen
@@ -224,13 +226,18 @@ public class BenchmarkService
             var d = r.DeserializeTimeMs;
             var rt = r.RoundTripTimeMs;
             var m = r.MemoryUsage;
+            var c = r.Compression;
+            var t = r.Throughput;
 
             sb.AppendLine(string.Join(",",
                 r.Format, r.PayloadSizeLabel, r.Iterations, r.SerializedSizeBytes,
                 s.Mean, s.Median, s.Min, s.Max, s.StdDev, s.P95, s.P99,
                 d.Mean, d.Median, d.Min, d.Max, d.StdDev, d.P95, d.P99,
                 rt.Mean, rt.Median, rt.Min, rt.Max, rt.StdDev, rt.P95, rt.P99,
-                m?.SerializePeakBytes ?? 0, m?.DeserializePeakBytes ?? 0, m?.TotalPeakBytes ?? 0
+                m?.SerializePeakBytes ?? 0, m?.DeserializePeakBytes ?? 0, m?.TotalPeakBytes ?? 0,
+                c?.GzipBytes ?? 0, c?.GzipRatio ?? 0, c?.ZstdBytes ?? 0, c?.ZstdRatio ?? 0,
+                t?.SerializeMsgPerSec ?? 0, t?.DeserializeMsgPerSec ?? 0,
+                t?.SerializeMbPerSec ?? 0, t?.DeserializeMbPerSec ?? 0
             ));
         }
 

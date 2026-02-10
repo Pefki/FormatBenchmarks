@@ -195,9 +195,14 @@ const App = {
             results, r => r.serializedSizeBytes, isAllSizes, true);
         this.createBarChart('memory-chart', 'Geheugen Piek (bytes)',
             results, r => r.memoryUsage?.totalPeakBytes || 0, isAllSizes, true);
+        this.createCompressionChart('compression-chart', results, isAllSizes);
+        this.createBarChart('throughput-chart', 'Doorvoer (msg/sec)',
+            results, r => r.throughput?.serializeMsgPerSec || 0, isAllSizes, false, 'msg/sec');
+        this.createBarChart('throughput-mb-chart', 'Doorvoer (MB/sec)',
+            results, r => r.throughput?.serializeMbPerSec || 0, isAllSizes, false, 'MB/sec');
     },
 
-    createBarChart(canvasId, title, results, valueExtractor, isGrouped = false, isSize = false) {
+    createBarChart(canvasId, title, results, valueExtractor, isGrouped = false, isSize = false, unit = null) {
         // Verwijder bestaande chart
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
@@ -237,6 +242,7 @@ const App = {
                         callbacks: {
                             label: (ctx) => {
                                 const val = ctx.parsed.y;
+                                if (unit) return `${val.toLocaleString()} ${unit}`;
                                 if (isSize) return `${val.toLocaleString()} bytes`;
                                 return `${val.toFixed(4)} ms`;
                             }
@@ -308,6 +314,97 @@ const App = {
         return { labels: formats, datasets };
     },
 
+    createCompressionChart(canvasId, results, isGrouped = false) {
+        if (this.charts[canvasId]) {
+            this.charts[canvasId].destroy();
+        }
+
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        // Voor grouped (alle sizes) neem we alleen de eerste size voor leesbaarheid
+        const targetResults = isGrouped
+            ? (() => {
+                const sizes = [...new Set(results.map(r => r.payloadSizeLabel))];
+                return results.filter(r => r.payloadSizeLabel === sizes[0]);
+            })()
+            : results;
+
+        const formats = targetResults.map(r => r.format);
+        const originalData = targetResults.map(r => r.compression?.originalBytes || r.serializedSizeBytes);
+        const gzipData = targetResults.map(r => r.compression?.gzipBytes || 0);
+        const zstdData = targetResults.map(r => r.compression?.zstdBytes || 0);
+        const hasZstd = zstdData.some(v => v > 0);
+
+        const datasets = [
+            {
+                label: 'Origineel',
+                data: originalData,
+                backgroundColor: 'rgba(149, 165, 166, 0.7)',
+                borderColor: 'rgb(149, 165, 166)',
+                borderWidth: 1.5, borderRadius: 4,
+            },
+            {
+                label: 'Gzip',
+                data: gzipData,
+                backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                borderColor: 'rgb(46, 204, 113)',
+                borderWidth: 1.5, borderRadius: 4,
+            },
+        ];
+
+        if (hasZstd) {
+            datasets.push({
+                label: 'Zstandard',
+                data: zstdData,
+                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                borderColor: 'rgb(52, 152, 219)',
+                borderWidth: 1.5, borderRadius: 4,
+            });
+        }
+
+        const sizeLabel = isGrouped
+            ? ` (${this.capitalize(targetResults[0]?.payloadSizeLabel || '')})`
+            : '';
+
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: formats, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, labels: { color: '#b0b0b0', font: { size: 11 } } },
+                    title: {
+                        display: true,
+                        text: `Compressie Vergelijking (bytes)${sizeLabel}`,
+                        font: { size: 15, weight: 'bold' },
+                        color: '#e0e0e0',
+                        padding: { bottom: 15 },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} bytes`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.06)' },
+                        ticks: { color: '#b0b0b0', callback: (v) => v.toLocaleString() },
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#b0b0b0', font: { size: 11 } },
+                    }
+                },
+                animation: { duration: 500 }
+            }
+        });
+    },
+
     // ==================== Data Tabel ====================
 
     createDataTable(results) {
@@ -326,6 +423,15 @@ const App = {
             const color = this.formatColors[r.format] || { bg: 'rgba(128,128,128,0.7)' };
             const memPeak = r.memoryUsage?.totalPeakBytes;
             const memDisplay = memPeak != null ? this.formatBytes(memPeak) : 'N/A';
+            const gzipBytes = r.compression?.gzipBytes;
+            const gzipRatio = r.compression?.gzipRatio;
+            const comprDisplay = gzipBytes != null
+                ? `${this.formatBytes(gzipBytes)} (${(gzipRatio * 100).toFixed(0)}%)`
+                : 'N/A';
+            const throughput = r.throughput?.serializeMsgPerSec;
+            const tpDisplay = throughput != null
+                ? `${Math.round(throughput).toLocaleString()}`
+                : 'N/A';
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
@@ -340,6 +446,8 @@ const App = {
                 <td>${r.deserializeTimeMs.p95.toFixed(4)}</td>
                 <td>${r.roundTripTimeMs.stdDev.toFixed(4)}</td>
                 <td>${memDisplay}</td>
+                <td>${comprDisplay}</td>
+                <td>${tpDisplay}</td>
             `;
             tbody.appendChild(row);
         });
@@ -537,14 +645,14 @@ const App = {
             runA, runB, idxA, idxB, r => r.deserializeTimeMs.mean);
         this.createCompareChart('compare-roundtrip-chart', 'Round-Trip Tijd (ms)',
             runA, runB, idxA, idxB, r => r.roundTripTimeMs.mean);
-        this.createCompareChart('compare-size-chart', 'Payload Grootte (bytes)',
-            runA, runB, idxA, idxB, r => r.serializedSizeBytes, true);
+        this.createCompareChart('compare-throughput-chart', 'Doorvoer (msg/sec)',
+            runA, runB, idxA, idxB, r => r.throughput?.serializeMsgPerSec || 0, false, 'msg/sec');
 
         // Vergelijkingstabel
         this.createCompareTable(runA, runB, idxA, idxB);
     },
 
-    createCompareChart(canvasId, title, runA, runB, idxA, idxB, valueExtractor, isSize = false) {
+    createCompareChart(canvasId, title, runA, runB, idxA, idxB, valueExtractor, isSize = false, unit = null) {
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
@@ -608,6 +716,7 @@ const App = {
                         callbacks: {
                             label: (ctx) => {
                                 const val = ctx.parsed.y;
+                                if (unit) return `${ctx.dataset.label}: ${val.toLocaleString()} ${unit}`;
                                 if (isSize) return `${ctx.dataset.label}: ${val.toLocaleString()} bytes`;
                                 return `${ctx.dataset.label}: ${val.toFixed(4)} ms`;
                             }

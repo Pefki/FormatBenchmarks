@@ -52,6 +52,8 @@ public class BenchmarkResult
     public TimingStats DeserializeTimeMs { get; set; } = new();
     public TimingStats RoundTripTimeMs { get; set; } = new();
     public MemoryUsage? MemoryUsage { get; set; }
+    public CompressionInfo? Compression { get; set; }
+    public ThroughputInfo? Throughput { get; set; }
 }
 
 /// <summary>
@@ -62,6 +64,29 @@ public class MemoryUsage
     public long SerializePeakBytes { get; set; }
     public long DeserializePeakBytes { get; set; }
     public long TotalPeakBytes { get; set; }
+}
+
+/// <summary>
+/// Compressie vergelijking voor geserialiseerde data.
+/// </summary>
+public class CompressionInfo
+{
+    public int OriginalBytes { get; set; }
+    public int GzipBytes { get; set; }
+    public double GzipRatio { get; set; }
+    public int? ZstdBytes { get; set; }
+    public double? ZstdRatio { get; set; }
+}
+
+/// <summary>
+/// Doorvoer metrics afgeleid van timing data.
+/// </summary>
+public class ThroughputInfo
+{
+    public double SerializeMsgPerSec { get; set; }
+    public double DeserializeMsgPerSec { get; set; }
+    public double SerializeMbPerSec { get; set; }
+    public double DeserializeMbPerSec { get; set; }
 }
 
 /// <summary>

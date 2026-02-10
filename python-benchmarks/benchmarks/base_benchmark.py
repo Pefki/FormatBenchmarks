@@ -6,10 +6,17 @@ Biedt standaard meet- en statistiek functionaliteit.
 """
 
 import time
+import gzip
 import statistics
 import tracemalloc
 from abc import ABC, abstractmethod
 from typing import Any
+
+try:
+    import zstandard as zstd
+    _HAS_ZSTD = True
+except ImportError:
+    _HAS_ZSTD = False
 
 
 class BaseBenchmark(ABC):
@@ -76,6 +83,16 @@ class BaseBenchmark(ABC):
         # Meet geheugenverbruik
         memory_stats = self._measure_memory(data, serialized)
 
+        # Meet compressie
+        compression_stats = self._measure_compression(serialized)
+
+        # Bereken throughput
+        ser_mean_ms = statistics.mean(serialize_times)
+        deser_mean_ms = statistics.mean(deserialize_times)
+        throughput = self._calculate_throughput(
+            ser_mean_ms, deser_mean_ms, payload_size
+        )
+
         return {
             "format": self.format_name,
             "iterations": iterations,
@@ -84,6 +101,8 @@ class BaseBenchmark(ABC):
             "deserialize_time_ms": self._calculate_stats(deserialize_times),
             "round_trip_time_ms": self._calculate_stats(round_trip_times),
             "memory_usage": memory_stats,
+            "compression": compression_stats,
+            "throughput": throughput,
         }
 
     def _measure_memory(self, data: dict, serialized: bytes) -> dict:
@@ -123,6 +142,66 @@ class BaseBenchmark(ABC):
             "serialize_peak_bytes": ser_peak,
             "deserialize_peak_bytes": deser_peak,
             "total_peak_bytes": total_peak,
+        }
+
+    @staticmethod
+    def _measure_compression(serialized: bytes) -> dict:
+        """
+        Meet hoe goed de geserialiseerde data comprimeert met gzip en zstd.
+
+        Returns:
+            dict met original_bytes, gzip_bytes, gzip_ratio,
+            en optioneel zstd_bytes, zstd_ratio
+        """
+        original = len(serialized)
+
+        # Gzip compressie (level 6 = standaard)
+        gzip_data = gzip.compress(serialized, compresslevel=6)
+        gzip_size = len(gzip_data)
+        gzip_ratio = round(gzip_size / original, 4) if original > 0 else 1.0
+
+        result = {
+            "original_bytes": original,
+            "gzip_bytes": gzip_size,
+            "gzip_ratio": gzip_ratio,
+        }
+
+        # Zstandard compressie (level 3 = standaard)
+        if _HAS_ZSTD:
+            cctx = zstd.ZstdCompressor(level=3)
+            zstd_data = cctx.compress(serialized)
+            zstd_size = len(zstd_data)
+            zstd_ratio = round(zstd_size / original, 4) if original > 0 else 1.0
+            result["zstd_bytes"] = zstd_size
+            result["zstd_ratio"] = zstd_ratio
+
+        return result
+
+    @staticmethod
+    def _calculate_throughput(
+        ser_mean_ms: float, deser_mean_ms: float, payload_size: int
+    ) -> dict:
+        """
+        Bereken doorvoer metrics op basis van gemiddelde tijden.
+
+        Returns:
+            dict met serialize_msg_per_sec, deserialize_msg_per_sec,
+            serialize_mb_per_sec, deserialize_mb_per_sec
+        """
+        # Messages per seconde
+        ser_mps = round(1000.0 / ser_mean_ms, 2) if ser_mean_ms > 0 else 0
+        deser_mps = round(1000.0 / deser_mean_ms, 2) if deser_mean_ms > 0 else 0
+
+        # MB per seconde (payload_size bytes per operatie)
+        mb = payload_size / (1024 * 1024)
+        ser_mbps = round(mb * ser_mps, 4) if ser_mps > 0 else 0
+        deser_mbps = round(mb * deser_mps, 4) if deser_mps > 0 else 0
+
+        return {
+            "serialize_msg_per_sec": ser_mps,
+            "deserialize_msg_per_sec": deser_mps,
+            "serialize_mb_per_sec": ser_mbps,
+            "deserialize_mb_per_sec": deser_mbps,
         }
 
     @staticmethod

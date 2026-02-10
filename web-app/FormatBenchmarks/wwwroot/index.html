@@ -271,6 +271,27 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compression-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="throughput-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="throughput-mb-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Data Table -->
@@ -300,6 +321,8 @@
                                         <th>Deser. P95 (ms)</th>
                                         <th>Std Dev (ms)</th>
                                         <th>Geheugen Piek</th>
+                                        <th>Gzip Compressie</th>
+                                        <th>Doorvoer (msg/s)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="results-table-body"></tbody>
@@ -358,7 +381,7 @@
                         <div class="col-md-6 mb-3">
                             <div class="card bg-dark border-secondary h-100">
                                 <div class="card-body chart-container">
-                                    <canvas id="compare-size-chart"></canvas>
+                                    <canvas id="compare-throughput-chart"></canvas>
                                 </div>
                             </div>
                         </div>
