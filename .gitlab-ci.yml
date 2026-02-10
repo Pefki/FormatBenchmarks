@@ -9,7 +9,9 @@ build-image:
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
     IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+    GIT_STRATEGY: clone
   before_script:
+    - git config --global url."https://oauth2:${CI_GIT_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - docker build -t $IMAGE_TAG .
