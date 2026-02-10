@@ -162,7 +162,7 @@
                             <i class="bi bi-speedometer2 display-1 text-primary"></i>
                             <h2 class="mt-3">Message Format Benchmarks</h2>
                             <p class="text-muted lead">
-                                Vergelijk de performantie van verschillende binary message formats.
+                                Vergelijk de performantie van verschillende (binary) message formats.
                             </p>
                             <div class="row justify-content-center mt-4">
                                 <div class="col-md-8">
@@ -198,16 +198,30 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="feature-card">
-                                        <i class="bi bi-lightning-fill text-warning fs-3"></i>
-                                        <div class="small mt-1"><strong>Performantie</strong></div>
-                                        <div class="text-muted x-small">Statistische analyse</div>
+                                        <i class="bi bi-arrow-left-right text-danger fs-3"></i>
+                                        <div class="small mt-1"><strong>Round-Trip</strong></div>
+                                        <div class="text-muted x-small">Totale serialisatie cyclus</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="feature-card">
-                                        <i class="bi bi-arrow-left-right text-danger fs-3"></i>
-                                        <div class="small mt-1"><strong>Round-Trip</strong></div>
-                                        <div class="text-muted x-small">Totale serialisatie cyclus</div>
+                                        <i class="bi bi-memory text-danger fs-3"></i>
+                                        <div class="small mt-1"><strong>Geheugen</strong></div>
+                                        <div class="text-muted x-small">Peak memory &amp; round-trip analyse</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="feature-card">
+                                        <i class="bi bi-file-zip text-info fs-3"></i>
+                                        <div class="small mt-1"><strong>Compressie</strong></div>
+                                        <div class="text-muted x-small">Gzip &amp; Zstandard vergelijking</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="feature-card">
+                                        <i class="bi bi-lightning-fill text-warning fs-3"></i>
+                                        <div class="small mt-1"><strong>Doorvoer</strong></div>
+                                        <div class="text-muted x-small">msg/sec &amp; MB/sec throughput</div>
                                     </div>
                                 </div>
                             </div>
@@ -445,7 +459,7 @@
 
     <!-- Footer -->
     <footer class="text-center text-muted small py-3 mt-4 border-top border-secondary">
-        Format Benchmarks &mdash; Team 41 'netwerkt' &mdash; KdG The Lab 2025-2026 &mdash;
+        Format Benchmarks &mdash; Copyright &copy; 2025-2026 Team 41 'netwerkt' — Sefkan Özmen, Tom Verschuren, Xander Geluykens  &mdash;
         <a href="https://gitlab.com/kdg-ti/the-lab/teams-25-26/41_netwerkt/format-benchmarks" class="text-muted">GitLab</a>
         &mdash; MIT License
     </footer>
