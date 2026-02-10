@@ -129,7 +129,26 @@ class BenchmarkRunner:
         return {
             "platform": platform.platform(),
             "python_version": platform.python_version(),
-            "processor": platform.processor() or "unknown",
+            "processor": BenchmarkRunner._get_cpu_name(),
             "machine": platform.machine(),
             "cpu_count": os.cpu_count() or 0,
         }
+
+    @staticmethod
+    def _get_cpu_name() -> str:
+        """Lees CPU naam, met fallback voor Linux/WSL/Docker."""
+        # Probeer platform.processor() eerst
+        name = platform.processor()
+        if name and name != "unknown":
+            return name
+
+        # Fallback: lees /proc/cpuinfo (Linux)
+        try:
+            with open("/proc/cpuinfo", "r") as f:
+                for line in f:
+                    if line.startswith("model name"):
+                        return line.split(":", 1)[1].strip()
+        except (FileNotFoundError, PermissionError):
+            pass
+
+        return "unknown"
