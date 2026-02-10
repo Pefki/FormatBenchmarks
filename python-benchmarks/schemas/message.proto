@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package benchmarks;
+
+// Hoofd benchmark bericht met diverse datatypes
+// voor het testen van serialisatie performantie.
+message BenchmarkMessage {
+    int64 id = 1;
+    string timestamp = 2;
+    string username = 3;
+    string email = 4;
+    string content = 5;
+    repeated string tags = 6;
+    map<string, string> metadata = 7;
+    double score = 8;
+    bool is_active = 9;
+    NestedData nested_data = 10;
+    repeated Item items = 11;
+}
+
+// Genest data object met gemixte types
+message NestedData {
+    string field1 = 1;
+    int64 field2 = 2;
+    repeated double values = 3;
+}
+
+// Item in een lijst met meerdere velden
+message Item {
+    string name = 1;
+    double value = 2;
+    bool active = 3;
+    string description = 4;
+    repeated string tags = 5;
+}

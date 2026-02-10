@@ -1,0 +1,34 @@
+(Binary) Message Formats.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Generated protobuf files
+python-benchmarks/schemas/*_pb2.py
+python-benchmarks/schemas/*_pb2_grpc.py
+
+# Benchmark results
+python-benchmarks/results/*.json
+!python-benchmarks/results/.gitkeep
+
+# .NET
+web-app/**/bin/
+web-app/**/obj/
+*.user
+*.suo
+.vs/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
