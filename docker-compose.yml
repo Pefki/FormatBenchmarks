@@ -1,0 +1,7 @@
+services:
+  format-benchmarks:
+    image: registry.gitlab.com/kdg-ti/the-lab/teams-25-26/41_netwerkt/format-benchmarks:latest
+    container_name: format-benchmarks
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
