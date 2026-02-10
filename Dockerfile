@@ -20,7 +20,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python3 \
         python3-venv \
-        python3-pip && \
+        python3-pip \
+        capnproto \
+        libcapnp-dev \
+        g++ && \
     rm -rf /var/lib/apt/lists/*
 
 # Python benchmarks kopiëren en venv opzetten

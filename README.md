@@ -1,6 +1,8 @@
 # Format Benchmarks
 
-Binary Message Format Performantie Vergelijking — KdG The Lab 2025-2026
+Message Format Benchmarking — KdG The Lab 2025-2026 — Team 41 'netwerkt'
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Overzicht
 
@@ -129,3 +131,13 @@ Open http://localhost:5000 in je browser. Configureer de benchmark parameters en
 - **C#** — ASP.NET Core web API, resultaat beheer, data export
 - **JavaScript** — Frontend UI, Chart.js grafieken
 - **HTML/CSS** — Bootstrap 5 dark theme UI
+
+## Licentie
+
+Dit project is gelicentieerd onder de [MIT License](LICENSE).
+
+## Team
+
+**Team 41 'netwerkt'** — KdG The Lab 2025-2026
+
+[GitLab Repository](https://gitlab.com/kdg-ti/the-lab/teams-25-26/41_netwerkt)

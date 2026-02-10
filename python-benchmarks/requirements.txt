@@ -5,6 +5,5 @@ protobuf>=4.25.0
 grpcio-tools>=1.60.0
 fastavro>=1.9.0
 
-# Cap'n Proto (optioneel - vereist capnproto C++ runtime)
-# Installeer eerst: sudo apt-get install capnproto libcapnp-dev
-# pycapnp>=2.0.0
+# Cap'n Proto
+pycapnp>=2.0.0
