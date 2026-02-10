@@ -51,6 +51,17 @@ public class BenchmarkResult
     public TimingStats SerializeTimeMs { get; set; } = new();
     public TimingStats DeserializeTimeMs { get; set; } = new();
     public TimingStats RoundTripTimeMs { get; set; } = new();
+    public MemoryUsage? MemoryUsage { get; set; }
+}
+
+/// <summary>
+/// Geheugenverbruik metrics voor een benchmark.
+/// </summary>
+public class MemoryUsage
+{
+    public long SerializePeakBytes { get; set; }
+    public long DeserializePeakBytes { get; set; }
+    public long TotalPeakBytes { get; set; }
 }
 
 /// <summary>
@@ -74,6 +85,6 @@ public class RunBenchmarkRequest
 {
     public int Iterations { get; set; } = 1000;
     public int Warmup { get; set; } = 100;
-    public List<string> Formats { get; set; } = new() { "json", "bson", "protobuf", "capnproto", "msgpack", "avro" };
+    public List<string> Formats { get; set; } = new() { "json", "bson", "protobuf", "capnproto", "msgpack", "avro", "flatbuffers" };
     public List<string> Sizes { get; set; } = new() { "small", "medium", "large" };
 }

@@ -4,6 +4,7 @@ pymongo>=4.6.0
 protobuf>=4.25.0
 grpcio-tools>=1.60.0
 fastavro>=1.9.0
+flatbuffers>=24.0.0
 
 # Cap'n Proto
 pycapnp>=2.0.0

@@ -7,6 +7,7 @@ Biedt standaard meet- en statistiek functionaliteit.
 
 import time
 import statistics
+import tracemalloc
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -72,6 +73,9 @@ class BaseBenchmark(ABC):
             s + d for s, d in zip(serialize_times, deserialize_times)
         ]
 
+        # Meet geheugenverbruik
+        memory_stats = self._measure_memory(data, serialized)
+
         return {
             "format": self.format_name,
             "iterations": iterations,
@@ -79,6 +83,46 @@ class BaseBenchmark(ABC):
             "serialize_time_ms": self._calculate_stats(serialize_times),
             "deserialize_time_ms": self._calculate_stats(deserialize_times),
             "round_trip_time_ms": self._calculate_stats(round_trip_times),
+            "memory_usage": memory_stats,
+        }
+
+    def _measure_memory(self, data: dict, serialized: bytes) -> dict:
+        """
+        Meet het geheugenverbruik van serialisatie en deserialisatie.
+        Gebruikt tracemalloc om peak geheugen allocatie te meten.
+
+        Returns:
+            dict met serialize_peak_bytes, deserialize_peak_bytes, total_peak_bytes
+        """
+        # Meet serialisatie geheugen
+        tracemalloc.start()
+        tracemalloc.reset_peak()
+        for _ in range(10):
+            self.serialize(data)
+        _, ser_peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        # Meet deserialisatie geheugen
+        tracemalloc.start()
+        tracemalloc.reset_peak()
+        for _ in range(10):
+            self.deserialize(serialized)
+        _, deser_peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        # Meet round-trip geheugen
+        tracemalloc.start()
+        tracemalloc.reset_peak()
+        for _ in range(10):
+            s = self.serialize(data)
+            self.deserialize(s)
+        _, total_peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        return {
+            "serialize_peak_bytes": ser_peak,
+            "deserialize_peak_bytes": deser_peak,
+            "total_peak_bytes": total_peak,
         }
 
     @staticmethod

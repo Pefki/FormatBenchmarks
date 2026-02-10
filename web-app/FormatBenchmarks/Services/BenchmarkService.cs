@@ -112,6 +112,9 @@ public class BenchmarkService
             foreach (var arg in args)
                 psi.ArgumentList.Add(arg);
 
+            // Stel PWD in zodat Cap'n Proto kj library geen warning geeft
+            psi.Environment["PWD"] = _scriptPath;
+
             using var process = Process.Start(psi)
                 ?? throw new InvalidOperationException("Kon Python proces niet starten");
 
@@ -210,7 +213,8 @@ public class BenchmarkService
             "DeserializeMeanMs", "DeserializeMedianMs", "DeserializeMinMs", "DeserializeMaxMs",
             "DeserializeStdDevMs", "DeserializeP95Ms", "DeserializeP99Ms",
             "RoundTripMeanMs", "RoundTripMedianMs", "RoundTripMinMs", "RoundTripMaxMs",
-            "RoundTripStdDevMs", "RoundTripP95Ms", "RoundTripP99Ms"
+            "RoundTripStdDevMs", "RoundTripP95Ms", "RoundTripP99Ms",
+            "MemSerializePeakBytes", "MemDeserializePeakBytes", "MemTotalPeakBytes"
         ));
 
         // Data rijen
@@ -219,12 +223,14 @@ public class BenchmarkService
             var s = r.SerializeTimeMs;
             var d = r.DeserializeTimeMs;
             var rt = r.RoundTripTimeMs;
+            var m = r.MemoryUsage;
 
             sb.AppendLine(string.Join(",",
                 r.Format, r.PayloadSizeLabel, r.Iterations, r.SerializedSizeBytes,
                 s.Mean, s.Median, s.Min, s.Max, s.StdDev, s.P95, s.P99,
                 d.Mean, d.Median, d.Min, d.Max, d.StdDev, d.P95, d.P99,
-                rt.Mean, rt.Median, rt.Min, rt.Max, rt.StdDev, rt.P95, rt.P99
+                rt.Mean, rt.Median, rt.Min, rt.Max, rt.StdDev, rt.P95, rt.P99,
+                m?.SerializePeakBytes ?? 0, m?.DeserializePeakBytes ?? 0, m?.TotalPeakBytes ?? 0
             ));
         }
 

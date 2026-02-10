@@ -16,7 +16,7 @@ class BenchmarkRunner:
         self.iterations = iterations
         self.warmup = warmup
         self.requested_formats = formats or [
-            "json", "bson", "protobuf", "capnproto", "msgpack", "avro"
+            "json", "bson", "protobuf", "capnproto", "msgpack", "avro", "flatbuffers"
         ]
         self._benchmarks = self._load_benchmarks()
 
@@ -71,6 +71,16 @@ class BenchmarkRunner:
             print("   Installeer: pip install fastavro")
         except Exception as e:
             print(f"⚠  Apache Avro fout: {e}")
+
+        # FlatBuffers
+        try:
+            from .flatbuffers_benchmark import FlatBuffersBenchmark
+            benchmarks["flatbuffers"] = FlatBuffersBenchmark()
+        except ImportError as e:
+            print(f"⚠  FlatBuffers niet beschikbaar ({e})")
+            print("   Installeer: pip install flatbuffers")
+        except Exception as e:
+            print(f"⚠  FlatBuffers fout: {e}")
 
         return benchmarks
 

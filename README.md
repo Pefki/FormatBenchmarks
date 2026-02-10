@@ -22,6 +22,7 @@ De C# ASP.NET Core web applicatie biedt een UI met grafieken en data export.
 | **Cap'n Proto** | Binary (zero-copy) | Ja (.capnp) | `pycapnp` |
 | **MessagePack** | Binary | Nee | `msgpack` |
 | **Apache Avro** | Binary | Ja (.avsc) | `fastavro` |
+| **FlatBuffers** | Binary (zero-copy) | Ja (.fbs) | `flatbuffers` |
 
 ### Benchmark Metrics
 
@@ -29,7 +30,15 @@ De C# ASP.NET Core web applicatie biedt een UI met grafieken en data export.
 - **Serialisatie tijd** — dict → bytes (ms)
 - **Deserialisatie tijd** — bytes → dict (ms)
 - **Round-trip tijd** — serialisatie + deserialisatie (ms)
+- **Geheugenverbruik** — piek geheugen allocatie per operatie (bytes, via `tracemalloc`)
 - **Statistieken** — mean, median, min, max, std dev, P95, P99
+
+### Web App Features
+
+- **Interactieve grafieken** — Chart.js bar charts per metric
+- **Run vergelijking** — vergelijk twee benchmark runs side-by-side met delta percentages
+- **Geheugen grafiek** — visualisatie van piek geheugengebruik per format
+- **Data export** — JSON en CSV export van resultaten
 
 ## Project Structuur
 
@@ -122,6 +131,7 @@ Open http://localhost:5000 in je browser. Configureer de benchmark parameters en
 | `POST` | `/api/benchmark/run` | Start een benchmark |
 | `GET` | `/api/benchmark/results` | Alle benchmark runs |
 | `GET` | `/api/benchmark/results/{id}` | Specifieke run |
+| `GET` | `/api/benchmark/compare?runA={id}&runB={id}` | Vergelijk twee runs |
 | `GET` | `/api/benchmark/export/{id}?format=json` | Export als JSON |
 | `GET` | `/api/benchmark/export/{id}?format=csv` | Export als CSV |
 

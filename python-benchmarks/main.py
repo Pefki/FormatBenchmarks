@@ -38,7 +38,7 @@ Voorbeelden:
     )
     parser.add_argument(
         "--formats", nargs="+",
-        default=["json", "bson", "protobuf", "capnproto", "msgpack", "avro"],
+        default=["json", "bson", "protobuf", "capnproto", "msgpack", "avro", "flatbuffers"],
         help="Formats om te benchmarken"
     )
     parser.add_argument(

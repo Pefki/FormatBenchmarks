@@ -21,12 +21,18 @@ const App = {
         "Cap'n Proto":  { bg: 'rgba(155, 89, 182, 0.75)', border: 'rgb(155, 89, 182)' },
         'MessagePack':  { bg: 'rgba(231, 76, 60, 0.75)',  border: 'rgb(231, 76, 60)' },
         'Apache Avro':  { bg: 'rgba(26, 188, 156, 0.75)', border: 'rgb(26, 188, 156)' },
+        'FlatBuffers':  { bg: 'rgba(241, 196, 15, 0.75)', border: 'rgb(241, 196, 15)' },
     },
+
+    // Vergelijking state
+    compareRunA: null,
+    compareRunB: null,
 
     // ==================== Initialisatie ====================
 
     init() {
         document.getElementById('run-btn').addEventListener('click', () => this.runBenchmark());
+        document.getElementById('compare-btn')?.addEventListener('click', () => this.openCompareModal());
 
         // Enter toets in input velden triggert ook de benchmark
         document.querySelectorAll('#iterations, #warmup').forEach(input => {
@@ -187,6 +193,8 @@ const App = {
             results, r => r.roundTripTimeMs.mean, isAllSizes);
         this.createBarChart('size-chart', 'Payload Grootte (bytes)',
             results, r => r.serializedSizeBytes, isAllSizes, true);
+        this.createBarChart('memory-chart', 'Geheugen Piek (bytes)',
+            results, r => r.memoryUsage?.totalPeakBytes || 0, isAllSizes, true);
     },
 
     createBarChart(canvasId, title, results, valueExtractor, isGrouped = false, isSize = false) {
@@ -316,6 +324,8 @@ const App = {
 
         sorted.forEach(r => {
             const color = this.formatColors[r.format] || { bg: 'rgba(128,128,128,0.7)' };
+            const memPeak = r.memoryUsage?.totalPeakBytes;
+            const memDisplay = memPeak != null ? this.formatBytes(memPeak) : 'N/A';
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
@@ -329,6 +339,7 @@ const App = {
                 <td>${r.serializeTimeMs.p95.toFixed(4)}</td>
                 <td>${r.deserializeTimeMs.p95.toFixed(4)}</td>
                 <td>${r.roundTripTimeMs.stdDev.toFixed(4)}</td>
+                <td>${memDisplay}</td>
             `;
             tbody.appendChild(row);
         });
@@ -442,5 +453,230 @@ const App = {
     capitalize(str) {
         if (!str) return '';
         return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+    },
+
+    // ==================== Run Vergelijking ====================
+
+    openCompareModal() {
+        if (this.allRuns.length < 2) {
+            this.showError('Minimaal 2 runs nodig om te vergelijken. Voer eerst meerdere benchmarks uit.');
+            return;
+        }
+
+        const modal = document.getElementById('compare-modal');
+        const selectA = document.getElementById('compare-run-a');
+        const selectB = document.getElementById('compare-run-b');
+
+        // Vul selects met runs
+        const optionsHtml = this.allRuns.map((run, i) => {
+            const time = new Date(run.timestamp).toLocaleTimeString('nl-NL');
+            const formats = [...new Set(run.results.map(r => r.format))];
+            return `<option value="${i}">Run #${i + 1} — ${time} (${formats.length} formats)</option>`;
+        }).join('');
+
+        selectA.innerHTML = optionsHtml;
+        selectB.innerHTML = optionsHtml;
+
+        // Standaard: laatste twee runs
+        selectA.value = this.allRuns.length - 2;
+        selectB.value = this.allRuns.length - 1;
+
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    },
+
+    executeCompare() {
+        const idxA = parseInt(document.getElementById('compare-run-a').value);
+        const idxB = parseInt(document.getElementById('compare-run-b').value);
+
+        if (idxA === idxB) {
+            this.showError('Selecteer twee verschillende runs om te vergelijken.');
+            return;
+        }
+
+        this.compareRunA = this.allRuns[idxA];
+        this.compareRunB = this.allRuns[idxB];
+
+        // Sluit modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('compare-modal'));
+        if (modal) modal.hide();
+
+        this.displayComparison();
+    },
+
+    displayComparison() {
+        const runA = this.compareRunA;
+        const runB = this.compareRunB;
+        if (!runA || !runB) return;
+
+        // Toon vergelijking sectie
+        document.getElementById('compare-section').classList.remove('d-none');
+        document.getElementById('results-section').classList.add('d-none');
+        document.getElementById('welcome-section').classList.add('d-none');
+
+        const idxA = this.allRuns.indexOf(runA);
+        const idxB = this.allRuns.indexOf(runB);
+        document.getElementById('compare-title').textContent =
+            `Run #${idxA + 1} vs Run #${idxB + 1}`;
+
+        // Vind gemeenschappelijke formats + sizes
+        const formatsA = new Set(runA.results.map(r => `${r.format}|${r.payloadSizeLabel}`));
+        const commonResults = runB.results.filter(r => formatsA.has(`${r.format}|${r.payloadSizeLabel}`));
+
+        // Bouw vergelijkingsgrafieken
+        this.createCompareChart('compare-serialize-chart', 'Serialisatie Tijd (ms)',
+            runA, runB, idxA, idxB, r => r.serializeTimeMs.mean);
+        this.createCompareChart('compare-deserialize-chart', 'Deserialisatie Tijd (ms)',
+            runA, runB, idxA, idxB, r => r.deserializeTimeMs.mean);
+        this.createCompareChart('compare-roundtrip-chart', 'Round-Trip Tijd (ms)',
+            runA, runB, idxA, idxB, r => r.roundTripTimeMs.mean);
+        this.createCompareChart('compare-size-chart', 'Payload Grootte (bytes)',
+            runA, runB, idxA, idxB, r => r.serializedSizeBytes, true);
+
+        // Vergelijkingstabel
+        this.createCompareTable(runA, runB, idxA, idxB);
+    },
+
+    createCompareChart(canvasId, title, runA, runB, idxA, idxB, valueExtractor, isSize = false) {
+        if (this.charts[canvasId]) {
+            this.charts[canvasId].destroy();
+        }
+
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        // Gemeenschappelijke format+size combinaties (gebruik 'small' als default filter)
+        const sizes = [...new Set([...runA.results.map(r => r.payloadSizeLabel), ...runB.results.map(r => r.payloadSizeLabel)])];
+        const targetSize = sizes.includes('small') ? 'small' : sizes[0];
+
+        const resultsA = runA.results.filter(r => r.payloadSizeLabel === targetSize);
+        const resultsB = runB.results.filter(r => r.payloadSizeLabel === targetSize);
+        const allFormats = [...new Set([...resultsA.map(r => r.format), ...resultsB.map(r => r.format)])];
+
+        const dataA = allFormats.map(fmt => {
+            const match = resultsA.find(r => r.format === fmt);
+            return match ? valueExtractor(match) : 0;
+        });
+        const dataB = allFormats.map(fmt => {
+            const match = resultsB.find(r => r.format === fmt);
+            return match ? valueExtractor(match) : 0;
+        });
+
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: allFormats,
+                datasets: [
+                    {
+                        label: `Run #${idxA + 1}`,
+                        data: dataA,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgb(52, 152, 219)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: `Run #${idxB + 1}`,
+                        data: dataB,
+                        backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                        borderColor: 'rgb(231, 76, 60)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, labels: { color: '#b0b0b0' } },
+                    title: {
+                        display: true,
+                        text: `${title} (${this.capitalize(targetSize)})`,
+                        font: { size: 15, weight: 'bold' },
+                        color: '#e0e0e0',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const val = ctx.parsed.y;
+                                if (isSize) return `${ctx.dataset.label}: ${val.toLocaleString()} bytes`;
+                                return `${ctx.dataset.label}: ${val.toFixed(4)} ms`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.06)' },
+                        ticks: { color: '#b0b0b0' },
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#b0b0b0', font: { size: 11 } },
+                    }
+                },
+                animation: { duration: 500 }
+            }
+        });
+    },
+
+    createCompareTable(runA, runB, idxA, idxB) {
+        const tbody = document.getElementById('compare-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const mapKey = r => `${r.format}|${r.payloadSizeLabel}`;
+        const mapA = Object.fromEntries(runA.results.map(r => [mapKey(r), r]));
+        const mapB = Object.fromEntries(runB.results.map(r => [mapKey(r), r]));
+        const allKeys = [...new Set([...Object.keys(mapA), ...Object.keys(mapB)])].sort();
+
+        allKeys.forEach(key => {
+            const a = mapA[key];
+            const b = mapB[key];
+            if (!a || !b) return; // Skip als niet in beide runs
+
+            const color = this.formatColors[a.format] || { bg: 'rgba(128,128,128,0.7)' };
+            const diff = (valA, valB) => {
+                if (valA === 0) return '—';
+                const pct = ((valB - valA) / valA * 100);
+                const cls = pct < 0 ? 'text-success' : pct > 0 ? 'text-danger' : 'text-muted';
+                const sign = pct > 0 ? '+' : '';
+                return `<span class="${cls}">${sign}${pct.toFixed(1)}%</span>`;
+            };
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span class="format-badge" style="background:${color.bg}">${a.format}</span></td>
+                <td>${this.capitalize(a.payloadSizeLabel)}</td>
+                <td>${a.serializeTimeMs.mean.toFixed(4)}</td>
+                <td>${b.serializeTimeMs.mean.toFixed(4)}</td>
+                <td>${diff(a.serializeTimeMs.mean, b.serializeTimeMs.mean)}</td>
+                <td>${a.roundTripTimeMs.mean.toFixed(4)}</td>
+                <td>${b.roundTripTimeMs.mean.toFixed(4)}</td>
+                <td>${diff(a.roundTripTimeMs.mean, b.roundTripTimeMs.mean)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    },
+
+    closeCompare() {
+        document.getElementById('compare-section').classList.add('d-none');
+        if (this.currentRun) {
+            document.getElementById('results-section').classList.remove('d-none');
+        } else {
+            document.getElementById('welcome-section').classList.remove('d-none');
+        }
+        this.compareRunA = null;
+        this.compareRunB = null;
     },
 };

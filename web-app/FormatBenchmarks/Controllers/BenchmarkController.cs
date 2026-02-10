@@ -54,6 +54,24 @@ public class BenchmarkController : ControllerBase
     }
 
     /// <summary>
+    /// Vergelijk twee benchmark runs.
+    /// GET /api/benchmark/compare?runA={id}&runB={id}
+    /// </summary>
+    [HttpGet("compare")]
+    public ActionResult Compare([FromQuery] Guid runA, [FromQuery] Guid runB)
+    {
+        var a = _service.GetRun(runA);
+        var b = _service.GetRun(runB);
+
+        if (a == null)
+            return NotFound(new { message = $"Benchmark run {runA} niet gevonden" });
+        if (b == null)
+            return NotFound(new { message = $"Benchmark run {runB} niet gevonden" });
+
+        return Ok(new { runA = a, runB = b });
+    }
+
+    /// <summary>
     /// Haal een specifieke benchmark run op.
     /// GET /api/benchmark/results/{id}
     /// </summary>
