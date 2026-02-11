@@ -1,0 +1,23 @@
+# Python cache en bytecode
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Test bestanden en resultaten
+python-benchmarks/results/
+python-benchmarks/tests/
+python-benchmarks/.pytest_cache/
+python-benchmarks/pytest.ini
+python-benchmarks/check_result.py
+
+# IDE en OS bestanden
+.git
+.gitignore
+.vscode/
+*.md
+LICENSE
+docker-compose.yml
+
+# .NET build artefacten
+web-app/FormatBenchmarks/bin/
+web-app/FormatBenchmarks/obj/

@@ -81,17 +81,26 @@ class BaseBenchmark(ABC):
         ]
 
         # Meet geheugenverbruik
-        memory_stats = self._measure_memory(data, serialized)
+        try:
+            memory_stats = self._measure_memory(data, serialized)
+        except Exception:
+            memory_stats = None
 
         # Meet compressie
-        compression_stats = self._measure_compression(serialized)
+        try:
+            compression_stats = self._measure_compression(serialized)
+        except Exception:
+            compression_stats = None
 
         # Bereken throughput
-        ser_mean_ms = statistics.mean(serialize_times)
-        deser_mean_ms = statistics.mean(deserialize_times)
-        throughput = self._calculate_throughput(
-            ser_mean_ms, deser_mean_ms, payload_size
-        )
+        try:
+            ser_mean_ms = statistics.mean(serialize_times)
+            deser_mean_ms = statistics.mean(deserialize_times)
+            throughput = self._calculate_throughput(
+                ser_mean_ms, deser_mean_ms, payload_size
+            )
+        except Exception:
+            throughput = None
 
         return {
             "format": self.format_name,

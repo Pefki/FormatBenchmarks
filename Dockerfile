@@ -19,6 +19,7 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python3 \
+        python3-dev \
         python3-venv \
         python3-pip \
         capnproto \
@@ -28,9 +29,12 @@ RUN apt-get update && \
 
 # Python benchmarks kopiëren en venv opzetten
 COPY python-benchmarks/ /app/python-benchmarks/
-RUN python3 -m venv /app/python-benchmarks/.venv && \
+RUN mkdir -p /app/python-benchmarks/results && \
+    python3 -m venv /app/python-benchmarks/.venv && \
     /app/python-benchmarks/.venv/bin/pip install --no-cache-dir \
-        -r /app/python-benchmarks/requirements.txt
+        -r /app/python-benchmarks/requirements.txt && \
+    /app/python-benchmarks/.venv/bin/python -c "import zstandard; print('zstandard OK')" && \
+    /app/python-benchmarks/.venv/bin/python -c "import tracemalloc; print('tracemalloc OK')"
 
 # Compileer protobuf schema
 RUN /app/python-benchmarks/.venv/bin/python /app/python-benchmarks/compile_schemas.py
