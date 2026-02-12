@@ -1,0 +1,51 @@
+{
+  "type": "record",
+  "name": "BenchmarkMessage",
+  "namespace": "benchmarks",
+  "doc": "Avro schema for benchmark messages with diverse data types.",
+  "fields": [
+    { "name": "id", "type": "long" },
+    { "name": "timestamp", "type": "string" },
+    { "name": "username", "type": "string" },
+    { "name": "email", "type": "string" },
+    { "name": "content", "type": "string" },
+    { "name": "tags", "type": { "type": "array", "items": "string" } },
+    { "name": "metadata", "type": { "type": "map", "values": "string" } },
+    { "name": "score", "type": "double" },
+    { "name": "is_active", "type": "boolean" },
+    {
+      "name": "nested_data",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "NestedData",
+          "fields": [
+            { "name": "field1", "type": "string" },
+            { "name": "field2", "type": "long" },
+            { "name": "values", "type": { "type": "array", "items": "double" } }
+          ]
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "items",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Item",
+          "fields": [
+            { "name": "name", "type": "string" },
+            { "name": "value", "type": "double" },
+            { "name": "active", "type": "boolean" },
+            { "name": "description", "type": ["null", "string"], "default": null },
+            { "name": "tags", "type": { "type": "array", "items": "string" }, "default": [] }
+          ]
+        }
+      },
+      "default": []
+    }
+  ]
+}

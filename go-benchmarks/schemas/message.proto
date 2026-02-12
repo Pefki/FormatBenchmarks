@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package benchmarks;
+
+option go_package = "example.com/benchmarks/schemas/protobuf";
+
+// Main benchmark message with diverse data types
+// for testing serialization performance.
+message BenchmarkMessage {
+    int64 id = 1;
+    string timestamp = 2;
+    string username = 3;
+    string email = 4;
+    string content = 5;
+    repeated string tags = 6;
+    map<string, string> metadata = 7;
+    double score = 8;
+    bool is_active = 9;
+    NestedData nested_data = 10;
+    repeated Item items = 11;
+}
+
+// Nested data object with mixed types
+message NestedData {
+    string field1 = 1;
+    int64 field2 = 2;
+    repeated double values = 3;
+}
+
+// Item in a list with multiple fields
+message Item {
+    string name = 1;
+    double value = 2;
+    bool active = 3;
+    string description = 4;
+    repeated string tags = 5;
+}

@@ -21,3 +21,10 @@ docker-compose.yml
 # .NET build artefacten
 web-app/FormatBenchmarks/bin/
 web-app/FormatBenchmarks/obj/
+
+# Go build artefacten
+go-benchmarks/benchmark
+go-benchmarks/results/
+go-benchmarks/schemas/protobuf/*.go
+go-benchmarks/schemas/capnp/*.go
+go-benchmarks/schemas/flatbuf/*.go

@@ -6,7 +6,7 @@
     <title>Format Benchmarks — Message Format Benchmarking</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="/css/style.css?v=2026021101" rel="stylesheet">
+    <link href="/css/style.css?v=2026021102" rel="stylesheet">
 </head>
 <body>
     <!-- Navbar -->
@@ -105,6 +105,21 @@
                             <label for="warmup" class="form-label small">Warmup iteraties</label>
                             <input type="number" class="form-control form-control-sm" id="warmup"
                                    value="100" min="0" max="10000" step="10">
+                        </div>
+
+                        <!-- Taal / Runtime -->
+                        <h6 class="text-primary"><i class="bi bi-translate"></i> Taal / Runtime</h6>
+                        <div class="mb-3">
+                            <div class="btn-group w-100" role="group" aria-label="Taal selectie">
+                                <input type="radio" class="btn-check" name="language" id="lang-python" value="python" checked autocomplete="off">
+                                <label class="btn btn-outline-primary btn-sm" for="lang-python">
+                                    <i class="bi bi-filetype-py"></i> Python
+                                </label>
+                                <input type="radio" class="btn-check" name="language" id="lang-go" value="go" autocomplete="off">
+                                <label class="btn btn-outline-primary btn-sm" for="lang-go">
+                                    <i class="bi bi-code-slash"></i> Go
+                                </label>
+                            </div>
                         </div>
 
                         <hr class="border-secondary">
@@ -466,6 +481,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="/js/app.js?v=2026021101"></script>
+    <script src="/js/app.js?v=2026021102"></script>
 </body>
 </html>

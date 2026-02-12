@@ -22,6 +22,8 @@ public class SystemInfo
 {
     public string Platform { get; set; } = "";
     public string PythonVersion { get; set; } = "";
+    public string GoVersion { get; set; } = "";
+    public string Language { get; set; } = "";
     public string Processor { get; set; } = "";
     public string Machine { get; set; } = "";
     public int CpuCount { get; set; }
@@ -112,4 +114,5 @@ public class RunBenchmarkRequest
     public int Warmup { get; set; } = 100;
     public List<string> Formats { get; set; } = new() { "json", "bson", "protobuf", "capnproto", "msgpack", "avro", "flatbuffers" };
     public List<string> Sizes { get; set; } = new() { "small", "medium", "large" };
+    public string Language { get; set; } = "python";
 }

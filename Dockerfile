@@ -1,5 +1,5 @@
 # ---- Stage 1: Build .NET app ----
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-dotnet
 WORKDIR /src
 
 # Kopieer csproj en restore dependencies
@@ -11,7 +11,54 @@ COPY web-app/ ./web-app/
 RUN dotnet publish web-app/FormatBenchmarks/FormatBenchmarks.csproj \
     -c Release -o /app/publish --no-restore
 
-# ---- Stage 2: Runtime image ----
+# ---- Stage 2: Build Go benchmarks ----
+FROM golang:1.26.0 AS build-go
+WORKDIR /src
+
+# Installeer schema compilers
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        protobuf-compiler \
+        capnproto \
+        libcapnp-dev \
+        flatbuffers-compiler && \
+    rm -rf /var/lib/apt/lists/*
+
+# Installeer Go code generation plugins
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install zombiezen.com/go/capnproto2/capnpc-go@latest
+
+# Kopieer Go module bestanden en download dependencies
+COPY go-benchmarks/go.mod go-benchmarks/go.sum ./go-benchmarks/
+WORKDIR /src/go-benchmarks
+RUN go mod download
+
+# Kopieer de rest van de Go code
+COPY go-benchmarks/ ./
+
+# Compileer schemas
+RUN mkdir -p schemas/protobuf schemas/capnp schemas/flatbuf && \
+    protoc --proto_path=schemas --go_out=schemas/protobuf \
+        --go_opt=paths=source_relative schemas/message.proto && \
+    CAPNP_STD=$(find $(go env GOMODCACHE) -path '*/zombiezen.com/go/capnproto2@*/std' -type d | head -1) && \
+    capnpc -I"$CAPNP_STD" -ogo:schemas/capnp schemas/message.capnp && \
+    if [ -f schemas/capnp/schemas/message.capnp.go ]; then \
+        mv schemas/capnp/schemas/message.capnp.go schemas/capnp/; \
+        rm -rf schemas/capnp/schemas; \
+    fi && \
+    flatc --go -o schemas/ schemas/message.fbs && \
+    if [ -d schemas/benchmarks ]; then \
+        mv schemas/benchmarks/*.go schemas/flatbuf/ 2>/dev/null || true; \
+        rmdir schemas/benchmarks 2>/dev/null || true; \
+    fi && \
+    for f in schemas/flatbuf/*.go; do \
+        [ -f "$f" ] && sed -i 's/^package benchmarks$/package flatbuf/' "$f"; \
+    done
+
+# Build Go binary
+RUN CGO_ENABLED=0 go build -o /app/benchmark .
+
+# ---- Stage 3: Runtime image ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
@@ -39,13 +86,19 @@ RUN mkdir -p /app/python-benchmarks/results && \
 # Compileer protobuf schema
 RUN /app/python-benchmarks/.venv/bin/python /app/python-benchmarks/compile_schemas.py
 
-# Gepubliceerde .NET app kopiëren
-COPY --from=build /app/publish .
+# Go benchmarks binary en schema kopiëren
+COPY --from=build-go /app/benchmark /app/go-benchmarks/benchmark
+COPY go-benchmarks/schemas/message.avsc /app/go-benchmarks/schemas/message.avsc
+RUN mkdir -p /app/go-benchmarks/results
 
-# Configuratie: verwijs Python naar de venv in de container
+# Gepubliceerde .NET app kopiëren
+COPY --from=build-dotnet /app/publish .
+
+# Configuratie
 ENV ASPNETCORE_URLS=http://+:5000
 ENV Python__Path=/app/python-benchmarks/.venv/bin/python
 ENV Python__ScriptPath=/app/python-benchmarks
+ENV Go__BinaryPath=/app/go-benchmarks/benchmark
 
 EXPOSE 5000
 

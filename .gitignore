@@ -19,6 +19,13 @@ python-benchmarks/schemas/*_pb2_grpc.py
 # Benchmark results
 python-benchmarks/results/*.json
 !python-benchmarks/results/.gitkeep
+go-benchmarks/results/*.json
+
+# Go
+go-benchmarks/benchmark
+go-benchmarks/schemas/protobuf/*.go
+go-benchmarks/schemas/capnp/*.go
+go-benchmarks/schemas/flatbuf/*.go
 
 # .NET
 web-app/**/bin/

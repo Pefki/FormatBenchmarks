@@ -52,6 +52,7 @@ const App = {
                 .map(cb => cb.value),
             sizes: Array.from(document.querySelectorAll('input[name="size"]:checked'))
                 .map(cb => cb.value),
+            language: document.querySelector('input[name="language"]:checked')?.value || 'python',
         };
     },
 
@@ -119,9 +120,16 @@ const App = {
 
         // Systeem informatie
         const sys = run.systemInfo || {};
+        const lang = (sys.language || 'python').toLowerCase();
+        const langLabel = lang === 'go' ? 'Go' : 'Python';
+        const langBadgeClass = lang === 'go' ? 'bg-info' : 'bg-warning text-dark';
+        const versionLabel = lang === 'go'
+            ? (sys.goVersion || 'N/A')
+            : (sys.pythonVersion || 'N/A');
         document.getElementById('system-info').innerHTML = `
+            <span><span class="badge ${langBadgeClass}">${langLabel}</span></span>
             <span><strong>Platform:</strong> ${sys.platform || 'N/A'}</span>
-            <span><strong>Python:</strong> ${sys.pythonVersion || 'N/A'}</span>
+            <span><strong>${langLabel}:</strong> ${versionLabel}</span>
             <span><strong>CPU:</strong> ${sys.processor || 'N/A'}</span>
             <span><strong>Cores:</strong> ${sys.cpuCount || 'N/A'}</span>
             <span><strong>Iteraties:</strong> ${run.config?.iterations || 'N/A'}</span>
@@ -509,12 +517,18 @@ const App = {
             const formats = run.results.map(r => r.format);
             const uniqueFormats = [...new Set(formats)];
             const statusClass = run.status === 'completed' ? 'completed' : 'failed';
+            const lang = (run.systemInfo?.language || 'python').toLowerCase();
+            const langLabel = lang === 'go' ? 'Go' : 'Python';
+            const langBadge = lang === 'go'
+                ? '<span class="badge bg-info me-1">Go</span>'
+                : '<span class="badge bg-warning text-dark me-1">Python</span>';
 
             return `
                 <div class="run-history-item d-flex justify-content-between align-items-center"
                      onclick="App.loadRun(${i})">
                     <div>
                         <span class="status-dot ${statusClass}"></span>
+                        ${langBadge}
                         <strong>Run #${i + 1}</strong> — ${time}
                     </div>
                     <div class="text-muted">
@@ -586,7 +600,9 @@ const App = {
         const optionsHtml = this.allRuns.map((run, i) => {
             const time = new Date(run.timestamp).toLocaleTimeString('nl-NL');
             const formats = [...new Set(run.results.map(r => r.format))];
-            return `<option value="${i}">Run #${i + 1} — ${time} (${formats.length} formats)</option>`;
+            const lang = (run.systemInfo?.language || 'python').toLowerCase();
+            const langLabel = lang === 'go' ? 'Go' : 'Python';
+            return `<option value="${i}">Run #${i + 1} [${langLabel}] — ${time} (${formats.length} formats)</option>`;
         }).join('');
 
         selectA.innerHTML = optionsHtml;

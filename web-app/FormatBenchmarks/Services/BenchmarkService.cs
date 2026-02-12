@@ -16,6 +16,7 @@ public class BenchmarkService
     private readonly ILogger<BenchmarkService> _logger;
     private readonly string _pythonPath;
     private readonly string _scriptPath;
+    private readonly string _goPath;
 
     public BenchmarkService(
         ILogger<BenchmarkService> logger,
@@ -48,15 +49,30 @@ public class BenchmarkService
             _pythonPath = File.Exists(venvPython) ? venvPython : "python3";
         }
 
+        // Go binary pad configureren
+        var configuredGoPath = configuration.GetValue<string>("Go:BinaryPath");
+        if (!string.IsNullOrEmpty(configuredGoPath))
+        {
+            _goPath = configuredGoPath;
+        }
+        else
+        {
+            _goPath = Path.GetFullPath(
+                Path.Combine(env.ContentRootPath, "..", "..", "go-benchmarks", "benchmark"));
+        }
+
         _logger.LogInformation("Python pad: {PythonPath}", _pythonPath);
         _logger.LogInformation("Script pad: {ScriptPath}", _scriptPath);
+        _logger.LogInformation("Go binary pad: {GoPath}", _goPath);
     }
 
     /// <summary>
-    /// Voer een benchmark uit door het Python script te starten.
+    /// Voer een benchmark uit door het Python of Go script te starten.
     /// </summary>
     public async Task<BenchmarkRun> RunBenchmarkAsync(RunBenchmarkRequest request)
     {
+        var language = (request.Language ?? "python").ToLowerInvariant();
+
         var run = new BenchmarkRun
         {
             Config = new BenchmarkConfig
@@ -76,95 +92,19 @@ public class BenchmarkService
 
         try
         {
-            // Output bestand voor deze run
-            var resultsDir = Path.Combine(_scriptPath, "results");
-            Directory.CreateDirectory(resultsDir);
-            var outputPath = Path.Combine(resultsDir, $"run_{run.Id}.json");
-
-            // Bouw argumenten lijst
-            var args = new List<string>
+            if (language == "go")
             {
-                Path.Combine(_scriptPath, "main.py"),
-                "--iterations", request.Iterations.ToString(),
-                "--warmup", request.Warmup.ToString(),
-                "--output", outputPath,
-                "--formats"
-            };
-            args.AddRange(request.Formats);
-            args.Add("--sizes");
-            args.AddRange(request.Sizes);
-
-            _logger.LogInformation("Start benchmark: {Id}", run.Id);
-            _logger.LogInformation("Commando: {Python} {Args}",
-                _pythonPath, string.Join(" ", args));
-
-            // Start Python proces
-            var psi = new ProcessStartInfo
-            {
-                FileName = _pythonPath,
-                WorkingDirectory = _scriptPath,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-
-            foreach (var arg in args)
-                psi.ArgumentList.Add(arg);
-
-            // Stel PWD in zodat Cap'n Proto kj library geen warning geeft
-            psi.Environment["PWD"] = _scriptPath;
-
-            using var process = Process.Start(psi)
-                ?? throw new InvalidOperationException("Kon Python proces niet starten");
-
-            var stdout = await process.StandardOutput.ReadToEndAsync();
-            var stderr = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            _logger.LogInformation("Python stdout:\n{Output}", stdout);
-            if (!string.IsNullOrEmpty(stderr))
-                _logger.LogWarning("Python stderr:\n{Error}", stderr);
-
-            if (process.ExitCode != 0)
-            {
-                run.Status = "failed";
-                run.ErrorMessage = $"Python exit code: {process.ExitCode}\n{stderr}";
-                _logger.LogError("Benchmark mislukt: {Error}", stderr);
-                return run;
-            }
-
-            // Lees en parse resultaten
-            if (File.Exists(outputPath))
-            {
-                var json = await File.ReadAllTextAsync(outputPath);
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                };
-
-                var resultData = JsonSerializer.Deserialize<PythonOutput>(json, options);
-
-                if (resultData != null)
-                {
-                    run.SystemInfo = resultData.SystemInfo ?? new SystemInfo();
-                    run.Config = resultData.Config ?? run.Config;
-                    run.Results = resultData.Results ?? new List<BenchmarkResult>();
-                    run.Timestamp = DateTime.TryParse(resultData.Timestamp, out var ts)
-                        ? ts : DateTime.UtcNow;
-                }
+                await RunGoBenchmarkAsync(run, request);
             }
             else
             {
-                run.Status = "failed";
-                run.ErrorMessage = $"Output bestand niet gevonden: {outputPath}";
-                return run;
+                await RunPythonBenchmarkAsync(run, request);
             }
 
+            run.SystemInfo.Language = language;
             run.Status = "completed";
-            _logger.LogInformation("Benchmark voltooid: {Id} ({Count} resultaten)",
-                run.Id, run.Results.Count);
+            _logger.LogInformation("Benchmark voltooid: {Id} ({Count} resultaten, taal: {Language})",
+                run.Id, run.Results.Count, language);
         }
         catch (Exception ex)
         {
@@ -174,6 +114,179 @@ public class BenchmarkService
         }
 
         return run;
+    }
+
+    /// <summary>
+    /// Voer benchmark uit via Python.
+    /// </summary>
+    private async Task RunPythonBenchmarkAsync(BenchmarkRun run, RunBenchmarkRequest request)
+    {
+        // Output bestand voor deze run
+        var resultsDir = Path.Combine(_scriptPath, "results");
+        Directory.CreateDirectory(resultsDir);
+        var outputPath = Path.Combine(resultsDir, $"run_{run.Id}.json");
+
+        // Bouw argumenten lijst
+        var args = new List<string>
+        {
+            Path.Combine(_scriptPath, "main.py"),
+            "--iterations", request.Iterations.ToString(),
+            "--warmup", request.Warmup.ToString(),
+            "--output", outputPath,
+            "--formats"
+        };
+        args.AddRange(request.Formats);
+        args.Add("--sizes");
+        args.AddRange(request.Sizes);
+
+        _logger.LogInformation("Start Python benchmark: {Id}", run.Id);
+        _logger.LogInformation("Commando: {Python} {Args}",
+            _pythonPath, string.Join(" ", args));
+
+        // Start Python proces
+        var psi = new ProcessStartInfo
+        {
+            FileName = _pythonPath,
+            WorkingDirectory = _scriptPath,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        foreach (var arg in args)
+            psi.ArgumentList.Add(arg);
+
+        // Stel PWD in zodat Cap'n Proto kj library geen warning geeft
+        psi.Environment["PWD"] = _scriptPath;
+
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException("Kon Python proces niet starten");
+
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        _logger.LogInformation("Python stdout:\n{Output}", stdout);
+        if (!string.IsNullOrEmpty(stderr))
+            _logger.LogWarning("Python stderr:\n{Error}", stderr);
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Python exit code: {process.ExitCode}\n{stderr}");
+        }
+
+        // Lees en parse resultaten
+        if (File.Exists(outputPath))
+        {
+            var json = await File.ReadAllTextAsync(outputPath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            };
+
+            var resultData = JsonSerializer.Deserialize<PythonOutput>(json, options);
+
+            if (resultData != null)
+            {
+                run.SystemInfo = resultData.SystemInfo ?? new SystemInfo();
+                run.Config = resultData.Config ?? run.Config;
+                run.Results = resultData.Results ?? new List<BenchmarkResult>();
+                run.Timestamp = DateTime.TryParse(resultData.Timestamp, out var ts)
+                    ? ts : DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException($"Output bestand niet gevonden: {outputPath}");
+        }
+    }
+
+    /// <summary>
+    /// Voer benchmark uit via Go binary.
+    /// </summary>
+    private async Task RunGoBenchmarkAsync(BenchmarkRun run, RunBenchmarkRequest request)
+    {
+        // Controleer of Go binary bestaat
+        if (!File.Exists(_goPath))
+        {
+            throw new InvalidOperationException(
+                $"Go benchmark binary niet gevonden: {_goPath}. Bouw eerst met 'go build'.");
+        }
+
+        var goDir = Path.GetDirectoryName(_goPath) ?? _goPath;
+        var resultsDir = Path.Combine(goDir, "results");
+        Directory.CreateDirectory(resultsDir);
+        var outputPath = Path.Combine(resultsDir, $"run_{run.Id}.json");
+
+        _logger.LogInformation("Start Go benchmark: {Id}", run.Id);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = _goPath,
+            WorkingDirectory = goDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        psi.ArgumentList.Add("-iterations");
+        psi.ArgumentList.Add(request.Iterations.ToString());
+        psi.ArgumentList.Add("-warmup");
+        psi.ArgumentList.Add(request.Warmup.ToString());
+        psi.ArgumentList.Add("-formats");
+        psi.ArgumentList.Add(string.Join(",", request.Formats));
+        psi.ArgumentList.Add("-sizes");
+        psi.ArgumentList.Add(string.Join(",", request.Sizes));
+        psi.ArgumentList.Add("-output");
+        psi.ArgumentList.Add(outputPath);
+
+        _logger.LogInformation("Commando: {Go} {Args}",
+            _goPath, string.Join(" ", psi.ArgumentList));
+
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException("Kon Go proces niet starten");
+
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        _logger.LogInformation("Go stdout:\n{Output}", stdout);
+        if (!string.IsNullOrEmpty(stderr))
+            _logger.LogWarning("Go stderr:\n{Error}", stderr);
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Go exit code: {process.ExitCode}\n{stderr}");
+        }
+
+        // Lees en parse Go resultaten (zelfde JSON structuur als Python)
+        if (File.Exists(outputPath))
+        {
+            var json = await File.ReadAllTextAsync(outputPath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            };
+
+            var resultData = JsonSerializer.Deserialize<PythonOutput>(json, options);
+
+            if (resultData != null)
+            {
+                run.SystemInfo = resultData.SystemInfo ?? new SystemInfo();
+                run.Config = resultData.Config ?? run.Config;
+                run.Results = resultData.Results ?? new List<BenchmarkResult>();
+                run.Timestamp = DateTime.TryParse(resultData.Timestamp, out var ts)
+                    ? ts : DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException($"Go output bestand niet gevonden: {outputPath}");
+        }
     }
 
     /// <summary>
