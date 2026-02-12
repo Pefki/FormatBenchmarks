@@ -73,16 +73,14 @@ RUN apt-get update && \
         libzstd-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy Cargo/build script/schema files first for dependency caching
+# Copy Cargo metadata first for dependency caching
 COPY rust-benchmarks/Cargo.toml ./
 COPY rust-benchmarks/Cargo.lock ./
-COPY rust-benchmarks/build.rs ./
-COPY rust-benchmarks/schemas ./schemas
-RUN mkdir -p src && echo "fn main() {}" > src/main.rs && cargo build --release
+RUN cargo fetch
 
 # Copy full Rust source and build release binary
 COPY rust-benchmarks/ ./
-RUN cargo build --release
+RUN cargo build --release --locked
 
 # ---- Stage 4: Runtime image ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0

@@ -28,3 +28,8 @@ go-benchmarks/results/
 go-benchmarks/schemas/protobuf/*.go
 go-benchmarks/schemas/capnp/*.go
 go-benchmarks/schemas/flatbuf/*.go
+
+# Rust build artifacts
+rust-benchmarks/target/
+rust-benchmarks/benchmark
+rust-benchmarks/results/
