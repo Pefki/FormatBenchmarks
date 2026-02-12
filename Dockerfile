@@ -73,8 +73,11 @@ RUN apt-get update && \
         libzstd-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy Cargo files first for dependency caching
+# Copy Cargo/build script/schema files first for dependency caching
 COPY rust-benchmarks/Cargo.toml ./
+COPY rust-benchmarks/Cargo.lock ./
+COPY rust-benchmarks/build.rs ./
+COPY rust-benchmarks/schemas ./schemas
 RUN mkdir -p src && echo "fn main() {}" > src/main.rs && cargo build --release
 
 # Copy full Rust source and build release binary
