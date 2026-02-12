@@ -44,6 +44,11 @@ The C# ASP.NET Core web application provides a UI with charts and data export.
 
 ```
 format-benchmarks/
+├── rust-benchmarks/            # Rust benchmark suite
+│   ├── src/main.rs             # CLI entry point
+│   ├── Cargo.toml
+│   ├── build.sh
+│   └── results/                # Output directory
 ├── python-benchmarks/          # Python benchmark suite
 │   ├── main.py                 # CLI entry point
 │   ├── compile_schemas.py      # Protobuf schema compilation
@@ -138,6 +143,7 @@ Open http://localhost:5000 in your browser. Configure the benchmark parameters a
 ## Languages & Technologies
 
 - **Python** — Benchmark execution, serialization/deserialization testing
+- **Rust** — Benchmark execution, serialization/deserialization testing
 - **C#** — ASP.NET Core web API, result management, data export
 - **JavaScript** — Frontend UI, Chart.js charts
 - **HTML/CSS** — Bootstrap 5 dark theme UI

@@ -17,6 +17,7 @@ public class BenchmarkService
     private readonly string _pythonPath;
     private readonly string _scriptPath;
     private readonly string _goPath;
+    private readonly string _rustPath;
 
     public BenchmarkService(
         ILogger<BenchmarkService> logger,
@@ -61,9 +62,22 @@ public class BenchmarkService
                 Path.Combine(env.ContentRootPath, "..", "..", "go-benchmarks", "benchmark"));
         }
 
+        // Configure Rust binary path
+        var configuredRustPath = configuration.GetValue<string>("Rust:BinaryPath");
+        if (!string.IsNullOrEmpty(configuredRustPath))
+        {
+            _rustPath = configuredRustPath;
+        }
+        else
+        {
+            _rustPath = Path.GetFullPath(
+                Path.Combine(env.ContentRootPath, "..", "..", "rust-benchmarks", "target", "release", "benchmark"));
+        }
+
         _logger.LogInformation("Python path: {PythonPath}", _pythonPath);
         _logger.LogInformation("Script path: {ScriptPath}", _scriptPath);
         _logger.LogInformation("Go binary path: {GoPath}", _goPath);
+        _logger.LogInformation("Rust binary path: {RustPath}", _rustPath);
     }
 
     /// <summary>
@@ -96,6 +110,10 @@ public class BenchmarkService
             {
                 await RunGoBenchmarkAsync(run, request);
             }
+            else if (language == "rust")
+            {
+                await RunRustBenchmarkAsync(run, request);
+            }
             else
             {
                 await RunPythonBenchmarkAsync(run, request);
@@ -114,6 +132,113 @@ public class BenchmarkService
         }
 
         return run;
+    }
+
+    /// <summary>
+    /// Run benchmark via Rust binary.
+    /// </summary>
+    private async Task RunRustBenchmarkAsync(BenchmarkRun run, RunBenchmarkRequest request)
+    {
+        if (!File.Exists(_rustPath))
+        {
+            throw new InvalidOperationException(
+                $"Rust benchmark binary not found: {_rustPath}. Build it first with 'cargo build --release'.");
+        }
+
+        var rustDir = Path.GetDirectoryName(_rustPath) ?? _rustPath;
+        var resultsDir = Path.Combine(rustDir, "results");
+        Directory.CreateDirectory(resultsDir);
+        var outputPath = Path.Combine(resultsDir, $"run_{run.Id}.json");
+
+        _logger.LogInformation("Start Rust benchmark: {Id}", run.Id);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = _rustPath,
+            WorkingDirectory = rustDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        psi.ArgumentList.Add("-iterations");
+        psi.ArgumentList.Add(request.Iterations.ToString());
+        psi.ArgumentList.Add("-warmup");
+        psi.ArgumentList.Add(request.Warmup.ToString());
+        psi.ArgumentList.Add("-formats");
+        psi.ArgumentList.Add(string.Join(",", request.Formats));
+        psi.ArgumentList.Add("-sizes");
+        psi.ArgumentList.Add(string.Join(",", request.Sizes));
+        psi.ArgumentList.Add("-output");
+        psi.ArgumentList.Add(outputPath);
+
+        _logger.LogInformation("Command: {Rust} {Args}",
+            _rustPath, string.Join(" ", psi.ArgumentList));
+
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException("Could not start Rust process");
+
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        _logger.LogInformation("Rust stdout:\n{Output}", stdout);
+        if (!string.IsNullOrEmpty(stderr))
+            _logger.LogWarning("Rust stderr:\n{Error}", stderr);
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Rust exit code: {process.ExitCode}\n{stderr}");
+        }
+
+        if (File.Exists(outputPath))
+        {
+            var json = await File.ReadAllTextAsync(outputPath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            };
+
+            var resultData = JsonSerializer.Deserialize<PythonOutput>(json, options);
+
+            if (resultData != null)
+            {
+                run.SystemInfo = resultData.SystemInfo ?? new SystemInfo();
+                run.Config = resultData.Config ?? run.Config;
+                run.Results = resultData.Results ?? new List<BenchmarkResult>();
+                var missingMemory = 0;
+                foreach (var benchmark in run.Results)
+                {
+                    if (benchmark.MemoryUsage == null)
+                    {
+                        benchmark.MemoryUsage = new MemoryUsage
+                        {
+                            SerializePeakBytes = 0,
+                            DeserializePeakBytes = 0,
+                            TotalPeakBytes = 0,
+                        };
+                        missingMemory++;
+                    }
+                }
+
+                if (missingMemory > 0)
+                {
+                    _logger.LogWarning(
+                        "Rust run {RunId}: {Count} results had no memory_usage in output. Falling back to zero values.",
+                        run.Id,
+                        missingMemory);
+                }
+
+                run.Timestamp = DateTime.TryParse(resultData.Timestamp, out var ts)
+                    ? ts : DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException($"Rust output file not found: {outputPath}");
+        }
     }
 
     /// <summary>

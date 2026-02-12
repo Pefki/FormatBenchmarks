@@ -1,0 +1,36 @@
+namespace benchmarks;
+
+table KeyValue {
+  key:string;
+  value:string;
+}
+
+table NestedData {
+  field1:string;
+  field2:long;
+  values:[double];
+}
+
+table Item {
+  name:string;
+  value:double;
+  active:bool;
+  description:string;
+  tags:[string];
+}
+
+table BenchmarkMessage {
+  id:long;
+  timestamp:string;
+  username:string;
+  email:string;
+  content:string;
+  tags:[string];
+  metadata:[KeyValue];
+  score:double;
+  is_active:bool;
+  nested_data:NestedData;
+  items:[Item];
+}
+
+root_type BenchmarkMessage;

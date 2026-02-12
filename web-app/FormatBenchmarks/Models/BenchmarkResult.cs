@@ -23,6 +23,7 @@ public class SystemInfo
     public string Platform { get; set; } = "";
     public string PythonVersion { get; set; } = "";
     public string GoVersion { get; set; } = "";
+    public string RustVersion { get; set; } = "";
     public string Language { get; set; } = "";
     public string Processor { get; set; } = "";
     public string Machine { get; set; } = "";

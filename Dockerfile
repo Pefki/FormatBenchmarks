@@ -58,7 +58,30 @@ RUN mkdir -p schemas/protobuf schemas/capnp schemas/flatbuf && \
 # Build Go binary
 RUN CGO_ENABLED=0 go build -o /app/benchmark .
 
-# ---- Stage 3: Runtime image ----
+# ---- Stage 3: Build Rust benchmarks ----
+FROM rust:1.86-slim AS build-rust
+WORKDIR /src/rust-benchmarks
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        pkg-config \
+        cmake \
+        clang \
+        capnproto \
+        flatbuffers-compiler \
+        libzstd-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Cargo files first for dependency caching
+COPY rust-benchmarks/Cargo.toml ./
+RUN mkdir -p src && echo "fn main() {}" > src/main.rs && cargo build --release
+
+# Copy full Rust source and build release binary
+COPY rust-benchmarks/ ./
+RUN cargo build --release
+
+# ---- Stage 4: Runtime image ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
@@ -91,6 +114,10 @@ COPY --from=build-go /app/benchmark /app/go-benchmarks/benchmark
 COPY go-benchmarks/schemas/message.avsc /app/go-benchmarks/schemas/message.avsc
 RUN mkdir -p /app/go-benchmarks/results
 
+# Copy Rust benchmark binary
+COPY --from=build-rust /src/rust-benchmarks/target/release/benchmark /app/rust-benchmarks/benchmark
+RUN mkdir -p /app/rust-benchmarks/results
+
 # Copy published .NET app
 COPY --from=build-dotnet /app/publish .
 
@@ -99,6 +126,7 @@ ENV ASPNETCORE_URLS=http://+:5000
 ENV Python__Path=/app/python-benchmarks/.venv/bin/python
 ENV Python__ScriptPath=/app/python-benchmarks
 ENV Go__BinaryPath=/app/go-benchmarks/benchmark
+ENV Rust__BinaryPath=/app/rust-benchmarks/benchmark
 
 EXPOSE 5000
 
