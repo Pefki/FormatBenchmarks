@@ -1,11 +1,11 @@
 """
 BSON Benchmark
 ===============
-Benchmark voor het BSON (Binary JSON) format.
-Gebruikt de bson module van pymongo.
+Benchmark for the BSON (Binary JSON) format.
+Uses the bson module from pymongo.
 
-BSON is het binary format dat MongoDB intern gebruikt.
-Het ondersteunt extra datatypes zoals datetime, binary, en ObjectId.
+BSON is the binary format used internally by MongoDB.
+It supports additional data types such as datetime, binary, and ObjectId.
 """
 
 import bson
@@ -13,16 +13,16 @@ from .base_benchmark import BaseBenchmark
 
 
 class BsonBenchmark(BaseBenchmark):
-    """Benchmark voor BSON serialisatie/deserialisatie."""
+    """Benchmark for BSON serialization/deserialization."""
 
     @property
     def format_name(self) -> str:
         return "BSON"
 
     def serialize(self, data: dict) -> bytes:
-        """Serialiseer dict naar BSON bytes."""
+        """Serialize dict to BSON bytes."""
         return bson.encode(data)
 
     def deserialize(self, payload: bytes) -> dict:
-        """Deserialiseer BSON bytes naar dict."""
+        """Deserialize BSON bytes to dict."""
         return bson.decode(payload)

@@ -1,13 +1,13 @@
 """
 Protocol Buffers Benchmark
 ===========================
-Benchmark voor Google Protocol Buffers (Protobuf).
-Vereist een gecompileerd .proto schema (message_pb2.py).
+Benchmark for Google Protocol Buffers (Protobuf).
+Requires a compiled .proto schema (message_pb2.py).
 
-Protobuf is een schema-gebaseerd binary format met sterke typing
-en compacte wire-format encoding.
+Protobuf is a schema-based binary format with strong typing
+and compact wire-format encoding.
 
-Voer `python compile_schemas.py` uit als message_pb2.py niet bestaat.
+Run `python compile_schemas.py` if message_pb2.py does not exist.
 """
 
 import sys
@@ -22,18 +22,18 @@ _SCHEMAS_DIR = os.path.abspath(
 
 
 def _get_message_module():
-    """Probeer het gecompileerde protobuf module te importeren of compileren."""
-    # Voeg schemas directory toe aan sys.path
+    """Try to import or compile the generated protobuf module."""
+    # Add schemas directory to sys.path
     if _SCHEMAS_DIR not in sys.path:
         sys.path.insert(0, _SCHEMAS_DIR)
 
-    # Probeer eerst direct te importeren
+    # Try direct import first
     try:
         return importlib.import_module("message_pb2")
     except ImportError:
         pass
 
-    # Probeer automatisch te compileren met grpc_tools
+    # Try automatic compilation with grpc_tools
     try:
         from grpc_tools import protoc
 
@@ -45,24 +45,24 @@ def _get_message_module():
             proto_file,
         ])
         if result == 0:
-            print("  [Protobuf schema automatisch gecompileerd]")
+            print("  [Protobuf schema compiled automatically]")
             return importlib.import_module("message_pb2")
     except ImportError:
         pass
 
     raise ImportError(
-        "Kon protobuf schema niet laden. "
-        "Voer uit: python compile_schemas.py"
+        "Could not load protobuf schema. "
+        "Run: python compile_schemas.py"
     )
 
 
 class ProtobufBenchmark(BaseBenchmark):
-    """Benchmark voor Protocol Buffers serialisatie/deserialisatie."""
+    """Benchmark for Protocol Buffers serialization/deserialization."""
 
     def __init__(self):
         self._pb2 = _get_message_module()
         self._message_class = self._pb2.BenchmarkMessage
-        # Importeer json_format helpers
+        # Import json_format helpers
         from google.protobuf.json_format import ParseDict, MessageToDict
         self._parse_dict = ParseDict
         self._to_dict = MessageToDict
@@ -72,18 +72,18 @@ class ProtobufBenchmark(BaseBenchmark):
         return "Protobuf"
 
     def _prepare_data(self, data: dict) -> dict:
-        """Converteer dict naar protobuf-compatibel formaat."""
+        """Convert dict to protobuf-compatible format."""
         prepared = dict(data)
 
-        # nested_data: direct compatibel als dict
-        # items: direct compatibel als list of dicts
+        # nested_data: directly compatible as dict
+        # items: directly compatible as list of dicts
 
-        # Verwijder velden die niet in het proto schema zitten
-        # (het schema heeft specifieke velden, onbekende velden worden genegeerd)
+        # Remove fields not present in the proto schema
+        # (unknown fields are ignored)
         return prepared
 
     def serialize(self, data: dict) -> bytes:
-        """Serialiseer dict naar Protobuf binary."""
+        """Serialize dict to Protobuf binary."""
         prepared = self._prepare_data(data)
         msg = self._parse_dict(
             prepared,
@@ -93,7 +93,7 @@ class ProtobufBenchmark(BaseBenchmark):
         return msg.SerializeToString()
 
     def deserialize(self, payload: bytes) -> dict:
-        """Deserialiseer Protobuf binary naar dict."""
+        """Deserialize Protobuf binary to dict."""
         msg = self._message_class()
         msg.ParseFromString(payload)
         try:
@@ -104,7 +104,7 @@ class ProtobufBenchmark(BaseBenchmark):
                 including_default_value_fields=False,
             )
         except TypeError:
-            # protobuf >= 6.x: parameter hernoemd
+            # protobuf >= 6.x: parameter renamed
             return self._to_dict(
                 msg,
                 preserving_proto_field_name=True,

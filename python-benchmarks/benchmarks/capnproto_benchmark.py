@@ -1,13 +1,13 @@
 """
 Cap'n Proto Benchmark
 ======================
-Benchmark voor Cap'n Proto, een zero-copy message format.
+Benchmark for Cap'n Proto, a zero-copy message format.
 
-Cap'n Proto is uniek omdat het geen serialisatie/deserialisatie stap heeft -
-het wire format IS het in-memory format. Dit maakt het extreem snel
-voor lees-intensieve workloads.
+Cap'n Proto is unique because it has no serialization/deserialization step -
+the wire format IS the in-memory format. This makes it extremely fast
+for read-heavy workloads.
 
-Vereist:
+Requires:
 - capnproto C++ runtime: sudo apt-get install capnproto libcapnp-dev
 - pycapnp: pip install pycapnp
 """
@@ -23,7 +23,7 @@ _SCHEMA_PATH = os.path.abspath(
 
 
 class CapnProtoBenchmark(BaseBenchmark):
-    """Benchmark voor Cap'n Proto serialisatie/deserialisatie."""
+    """Benchmark for Cap'n Proto serialization/deserialization."""
 
     def __init__(self):
         self._module = capnp.load(_SCHEMA_PATH)
@@ -33,20 +33,20 @@ class CapnProtoBenchmark(BaseBenchmark):
         return "Cap'n Proto"
 
     def serialize(self, data: dict) -> bytes:
-        """Bouw een Cap'n Proto message en serialiseer naar bytes."""
+        """Build a Cap'n Proto message and serialize to bytes."""
         msg = self._module.BenchmarkMessage.new_message()
         self._fill_message(msg, data)
         return msg.to_bytes()
 
     def deserialize(self, payload: bytes) -> dict:
-        """Deserialiseer bytes naar Cap'n Proto message en lees alle velden."""
+        """Deserialize bytes to a Cap'n Proto message and read all fields."""
         with self._module.BenchmarkMessage.from_bytes(
             payload, traversal_limit_in_words=2**64 - 1
         ) as msg:
             return self._to_dict(msg)
 
     def _fill_message(self, msg, data: dict):
-        """Vul een Cap'n Proto message vanuit een Python dict."""
+        """Populate a Cap'n Proto message from a Python dict."""
         msg.id = data.get("id", 0)
         msg.timestamp = data.get("timestamp", "")
         msg.username = data.get("username", "")
@@ -61,7 +61,7 @@ class CapnProtoBenchmark(BaseBenchmark):
         for i, tag in enumerate(tags):
             msg.tags[i] = tag
 
-        # Metadata (als KeyValue lijst)
+        # Metadata (as KeyValue list)
         metadata = data.get("metadata", {})
         msg.init("metadata", len(metadata))
         for i, (k, v) in enumerate(metadata.items()):
@@ -92,7 +92,7 @@ class CapnProtoBenchmark(BaseBenchmark):
                 msg.items[i].tags[j] = t
 
     def _to_dict(self, msg) -> dict:
-        """Converteer een Cap'n Proto message naar een Python dict."""
+        """Convert a Cap'n Proto message to a Python dict."""
         result = {
             "id": msg.id,
             "timestamp": msg.timestamp,

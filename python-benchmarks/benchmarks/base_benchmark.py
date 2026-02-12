@@ -1,8 +1,8 @@
 """
-Base Benchmark Klasse
+Base Benchmark Class
 ======================
-Abstracte base class voor alle message format benchmarks.
-Biedt standaard meet- en statistiek functionaliteit.
+Abstract base class for all message format benchmarks.
+Provides default measurement and statistics functionality.
 """
 
 import time
@@ -20,79 +20,79 @@ except ImportError:
 
 
 class BaseBenchmark(ABC):
-    """Abstracte base class voor message format benchmarks."""
+    """Abstract base class for message format benchmarks."""
 
     @property
     @abstractmethod
     def format_name(self) -> str:
-        """Geeft de naam van het format terug."""
+        """Returns the name of the format."""
         pass
 
     @abstractmethod
     def serialize(self, data: dict) -> bytes:
-        """Serialiseer de data naar bytes."""
+        """Serialize the data to bytes."""
         pass
 
     @abstractmethod
     def deserialize(self, payload: bytes) -> Any:
-        """Deserialiseer bytes terug naar data."""
+        """Deserialize bytes back to data."""
         pass
 
     def run_benchmark(self, data: dict, iterations: int, warmup: int = 100) -> dict:
         """
-        Voer de volledige benchmark suite uit voor dit format.
+        Run the full benchmark suite for this format.
 
         Args:
-            data: De testdata om te serialiseren/deserialiseren
-            iterations: Aantal meetiteraties
-            warmup: Aantal warmup iteraties (niet gemeten)
+            data: Test data to serialize/deserialize
+            iterations: Number of measured iterations
+            warmup: Number of warmup iterations (not measured)
 
         Returns:
-            dict met benchmark resultaten en statistieken
+            dict with benchmark results and statistics
         """
-        # Warmup fase - breng JIT/caches op temperatuur
+        # Warmup phase - prime JIT/caches
         for _ in range(warmup):
             serialized = self.serialize(data)
             self.deserialize(serialized)
 
-        # Meet serialisatie
+        # Measure serialization
         serialize_times = []
         serialized = None
         for _ in range(iterations):
             start = time.perf_counter_ns()
             serialized = self.serialize(data)
             end = time.perf_counter_ns()
-            serialize_times.append((end - start) / 1_000_000)  # Naar ms
+            serialize_times.append((end - start) / 1_000_000)  # To ms
 
-        # Meet payload grootte
+        # Measure payload size
         payload_size = len(serialized)
 
-        # Meet deserialisatie
+        # Measure deserialization
         deserialize_times = []
         for _ in range(iterations):
             start = time.perf_counter_ns()
             self.deserialize(serialized)
             end = time.perf_counter_ns()
-            deserialize_times.append((end - start) / 1_000_000)  # Naar ms
+            deserialize_times.append((end - start) / 1_000_000)  # To ms
 
-        # Bereken round-trip tijden
+        # Compute round-trip times
         round_trip_times = [
             s + d for s, d in zip(serialize_times, deserialize_times)
         ]
 
-        # Meet geheugenverbruik
+        # Measure memory usage
         try:
             memory_stats = self._measure_memory(data, serialized)
         except Exception:
             memory_stats = None
 
-        # Meet compressie
+        # Measure compression
         try:
             compression_stats = self._measure_compression(serialized)
         except Exception:
             compression_stats = None
 
-        # Bereken throughput
+        # Calculate throughput
         try:
             ser_mean_ms = statistics.mean(serialize_times)
             deser_mean_ms = statistics.mean(deserialize_times)
@@ -116,13 +116,13 @@ class BaseBenchmark(ABC):
 
     def _measure_memory(self, data: dict, serialized: bytes) -> dict:
         """
-        Meet het geheugenverbruik van serialisatie en deserialisatie.
-        Gebruikt tracemalloc om peak geheugen allocatie te meten.
+        Measure memory usage of serialization and deserialization.
+        Uses tracemalloc to measure peak memory allocation.
 
         Returns:
-            dict met serialize_peak_bytes, deserialize_peak_bytes, total_peak_bytes
+            dict with serialize_peak_bytes, deserialize_peak_bytes, total_peak_bytes
         """
-        # Meet serialisatie geheugen
+        # Measure serialization memory
         tracemalloc.start()
         tracemalloc.reset_peak()
         for _ in range(10):
@@ -130,7 +130,7 @@ class BaseBenchmark(ABC):
         _, ser_peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        # Meet deserialisatie geheugen
+        # Measure deserialization memory
         tracemalloc.start()
         tracemalloc.reset_peak()
         for _ in range(10):
@@ -138,7 +138,7 @@ class BaseBenchmark(ABC):
         _, deser_peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        # Meet round-trip geheugen
+        # Measure round-trip memory
         tracemalloc.start()
         tracemalloc.reset_peak()
         for _ in range(10):
@@ -156,15 +156,15 @@ class BaseBenchmark(ABC):
     @staticmethod
     def _measure_compression(serialized: bytes) -> dict:
         """
-        Meet hoe goed de geserialiseerde data comprimeert met gzip en zstd.
+        Measure how well serialized data compresses with gzip and zstd.
 
         Returns:
-            dict met original_bytes, gzip_bytes, gzip_ratio,
-            en optioneel zstd_bytes, zstd_ratio
+            dict with original_bytes, gzip_bytes, gzip_ratio,
+            and optionally zstd_bytes, zstd_ratio
         """
         original = len(serialized)
 
-        # Gzip compressie (level 6 = standaard)
+        # Gzip compression (level 6 = default)
         gzip_data = gzip.compress(serialized, compresslevel=6)
         gzip_size = len(gzip_data)
         gzip_ratio = round(gzip_size / original, 4) if original > 0 else 1.0
@@ -175,7 +175,7 @@ class BaseBenchmark(ABC):
             "gzip_ratio": gzip_ratio,
         }
 
-        # Zstandard compressie (level 3 = standaard)
+        # Zstandard compression (level 3 = default)
         if _HAS_ZSTD:
             cctx = zstd.ZstdCompressor(level=3)
             zstd_data = cctx.compress(serialized)
@@ -191,17 +191,17 @@ class BaseBenchmark(ABC):
         ser_mean_ms: float, deser_mean_ms: float, payload_size: int
     ) -> dict:
         """
-        Bereken doorvoer metrics op basis van gemiddelde tijden.
+        Calculate throughput metrics based on mean timings.
 
         Returns:
-            dict met serialize_msg_per_sec, deserialize_msg_per_sec,
+            dict with serialize_msg_per_sec, deserialize_msg_per_sec,
             serialize_mb_per_sec, deserialize_mb_per_sec
         """
-        # Messages per seconde
+        # Messages per second
         ser_mps = round(1000.0 / ser_mean_ms, 2) if ser_mean_ms > 0 else 0
         deser_mps = round(1000.0 / deser_mean_ms, 2) if deser_mean_ms > 0 else 0
 
-        # MB per seconde (payload_size bytes per operatie)
+        # MB per second (payload_size bytes per operation)
         mb = payload_size / (1024 * 1024)
         ser_mbps = round(mb * ser_mps, 4) if ser_mps > 0 else 0
         deser_mbps = round(mb * deser_mps, 4) if deser_mps > 0 else 0
@@ -216,10 +216,10 @@ class BaseBenchmark(ABC):
     @staticmethod
     def _calculate_stats(times: list) -> dict:
         """
-        Bereken statistische metrics voor een lijst van timing metingen.
+        Calculate statistical metrics for a list of timing measurements.
 
         Returns:
-            dict met mean, median, min, max, std_dev, p95, p99
+            dict with mean, median, min, max, std_dev, p95, p99
         """
         sorted_times = sorted(times)
         n = len(sorted_times)

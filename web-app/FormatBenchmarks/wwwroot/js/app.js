@@ -12,8 +12,161 @@ const App = {
     currentRun: null,
     allRuns: [],
     charts: {},
+    uiLanguage: 'en',
+    translations: {
+        en: {
+            cfgTitle: 'Configuration',
+            payloadTitle: 'Payload Size',
+            parametersTitle: 'Parameters',
+            iterationsLabel: 'Iterations',
+            warmupLabel: 'Warmup iterations',
+            runtimeLanguageTitle: 'Runtime Language',
+            compareRunsBtn: 'Compare Runs',
+            selectAllBtn: 'Select All',
+            selectNoneBtn: 'Select None',
+            loadingRunning: '<i class="bi bi-hourglass-split"></i> Running benchmarks...',
+            loadingInfo: 'This may take a while depending on the number of iterations.',
+            welcomeSubtitle: 'Compare performance across different (binary) message formats.',
+            welcomeHelp: 'Select the desired formats and parameters in the configuration panel and click <strong>"Start Benchmark"</strong> to begin.',
+            featurePayload: 'Compare serialized payload sizes',
+            featureSerializationTitle: 'Serialization',
+            featureSerialization: 'Measure (de)serialization speed',
+            featureRoundtrip: 'Total serialization cycle',
+            featureMemoryTitle: 'Memory',
+            featureMemory: 'Peak memory & round-trip analysis',
+            featureCompressionTitle: 'Compression',
+            featureCompression: 'Gzip & Zstandard comparison',
+            featureThroughputTitle: 'Throughput',
+            systemInfoTitle: 'System Information',
+            payloadSizeFilterLabel: 'Payload size:',
+            resultsTableTitle: 'Results Table',
+            thSize: 'Size',
+            thSerAvg: 'Ser. avg (ms)',
+            thDeserAvg: 'Deser. avg (ms)',
+            thRtAvg: 'Round-Trip avg (ms)',
+            thMemPeak: 'Memory Peak',
+            thGzipComp: 'Gzip Compression',
+            thThroughput: 'Throughput (msg/s)',
+            runHistoryTitle: 'Previous Runs',
+            compareHeaderPrefix: 'Run Comparison:',
+            closeCompareBtn: 'Close',
+            compareDetailsTitle: 'Comparison Details',
+            cmpThSize: 'Size',
+            compareModalTitle: 'Compare Runs',
+            compareRunALabel: 'Run A (baseline)',
+            compareRunBLabel: 'Run B (comparison)',
+            compareCancelBtn: 'Cancel',
+            compareExecuteBtn: 'Compare',
+            noFormatSelected: 'Select at least one message format.',
+            noSizeSelected: 'Select at least one payload size.',
+            benchmarkFailed: 'Benchmark execution failed',
+            benchmarkError: 'Benchmark error: {message}',
+            platform: 'Platform',
+            cpu: 'CPU',
+            cores: 'Cores',
+            iterations: 'Iterations',
+            all: 'All',
+            chartSerialize: 'Serialization Time (ms)',
+            chartDeserialize: 'Deserialization Time (ms)',
+            chartRoundTrip: 'Round-Trip Time (ms)',
+            chartPayloadSize: 'Payload Size (bytes)',
+            chartMemoryPeak: 'Memory Peak (bytes)',
+            chartThroughputMsg: 'Throughput (msg/sec)',
+            chartThroughputMb: 'Throughput (MB/sec)',
+            original: 'Original',
+            compressionComparison: 'Compression Comparison (bytes)',
+            noResultsExport: 'No results to export.',
+            csvExportFailed: 'CSV export failed',
+            noPreviousRuns: 'No previous runs yet.',
+            running: 'Running...',
+            startBenchmark: '<i class="bi bi-play-fill"></i> Start Benchmark',
+            needTwoRuns: 'At least 2 runs are required to compare. Run more benchmarks first.',
+            compareSelectDifferent: 'Select two different runs to compare.',
+            runLabel: 'Run',
+            tests: 'tests',
+            formats: 'formats',
+            sizeSmall: 'Small',
+            sizeMedium: 'Medium',
+            sizeLarge: 'Large'
+        },
+        nl: {
+            cfgTitle: 'Configuratie',
+            payloadTitle: 'Payload Grootte',
+            parametersTitle: 'Parameters',
+            iterationsLabel: 'Iteraties',
+            warmupLabel: 'Warmup iteraties',
+            runtimeLanguageTitle: 'Taal / Runtime',
+            compareRunsBtn: 'Vergelijk Runs',
+            selectAllBtn: 'Alles selecteren',
+            selectNoneBtn: 'Niets selecteren',
+            loadingRunning: '<i class="bi bi-hourglass-split"></i> Benchmarks worden uitgevoerd...',
+            loadingInfo: 'Dit kan even duren afhankelijk van het aantal iteraties.',
+            welcomeSubtitle: 'Vergelijk de performantie van verschillende (binary) message formats.',
+            welcomeHelp: 'Selecteer de gewenste formats en parameters in het configuratiepaneel en klik op <strong>"Start Benchmark"</strong> om te beginnen.',
+            featurePayload: 'Vergelijk geserialiseerde groottes',
+            featureSerializationTitle: 'Serialisatie',
+            featureSerialization: 'Meet (de)serialisatie snelheid',
+            featureRoundtrip: 'Totale serialisatie cyclus',
+            featureMemoryTitle: 'Geheugen',
+            featureMemory: 'Peak memory & round-trip analyse',
+            featureCompressionTitle: 'Compressie',
+            featureCompression: 'Gzip & Zstandard vergelijking',
+            featureThroughputTitle: 'Doorvoer',
+            systemInfoTitle: 'Systeem Informatie',
+            payloadSizeFilterLabel: 'Payload grootte:',
+            resultsTableTitle: 'Resultaten Tabel',
+            thSize: 'Grootte',
+            thSerAvg: 'Ser. gem. (ms)',
+            thDeserAvg: 'Deser. gem. (ms)',
+            thRtAvg: 'Round-Trip gem. (ms)',
+            thMemPeak: 'Geheugen Piek',
+            thGzipComp: 'Gzip Compressie',
+            thThroughput: 'Doorvoer (msg/s)',
+            runHistoryTitle: 'Vorige Runs',
+            compareHeaderPrefix: 'Run Vergelijking:',
+            closeCompareBtn: 'Sluiten',
+            compareDetailsTitle: 'Vergelijking Details',
+            cmpThSize: 'Grootte',
+            compareModalTitle: 'Runs Vergelijken',
+            compareRunALabel: 'Run A (basis)',
+            compareRunBLabel: 'Run B (vergelijking)',
+            compareCancelBtn: 'Annuleren',
+            compareExecuteBtn: 'Vergelijken',
+            noFormatSelected: 'Selecteer minimaal één message format.',
+            noSizeSelected: 'Selecteer minimaal één payload grootte.',
+            benchmarkFailed: 'Benchmark uitvoering mislukt',
+            benchmarkError: 'Benchmark fout: {message}',
+            platform: 'Platform',
+            cpu: 'CPU',
+            cores: 'Cores',
+            iterations: 'Iteraties',
+            all: 'Alle',
+            chartSerialize: 'Serialisatie Tijd (ms)',
+            chartDeserialize: 'Deserialisatie Tijd (ms)',
+            chartRoundTrip: 'Round-Trip Tijd (ms)',
+            chartPayloadSize: 'Payload Grootte (bytes)',
+            chartMemoryPeak: 'Geheugen Piek (bytes)',
+            chartThroughputMsg: 'Doorvoer (msg/sec)',
+            chartThroughputMb: 'Doorvoer (MB/sec)',
+            original: 'Origineel',
+            compressionComparison: 'Compressie Vergelijking (bytes)',
+            noResultsExport: 'Geen resultaten om te exporteren.',
+            csvExportFailed: 'CSV export mislukt',
+            noPreviousRuns: 'Nog geen vorige runs.',
+            running: 'Bezig...',
+            startBenchmark: '<i class="bi bi-play-fill"></i> Start Benchmark',
+            needTwoRuns: 'Minimaal 2 runs nodig om te vergelijken. Voer eerst meerdere benchmarks uit.',
+            compareSelectDifferent: 'Selecteer twee verschillende runs om te vergelijken.',
+            runLabel: 'Run',
+            tests: 'tests',
+            formats: 'formats',
+            sizeSmall: 'Klein',
+            sizeMedium: 'Middel',
+            sizeLarge: 'Groot'
+        }
+    },
 
-    // Kleurenschema per format
+    // Color scheme per format
     formatColors: {
         'JSON':         { bg: 'rgba(243, 156, 18, 0.75)', border: 'rgb(243, 156, 18)' },
         'BSON':         { bg: 'rgba(39, 174, 96, 0.75)',  border: 'rgb(39, 174, 96)' },
@@ -24,17 +177,23 @@ const App = {
         'FlatBuffers':  { bg: 'rgba(241, 196, 15, 0.75)', border: 'rgb(241, 196, 15)' },
     },
 
-    // Vergelijking state
+    // Comparison state
     compareRunA: null,
     compareRunB: null,
 
-    // ==================== Initialisatie ====================
+    // ==================== Initialization ====================
 
     init() {
         document.getElementById('run-btn').addEventListener('click', () => this.runBenchmark());
         document.getElementById('compare-btn')?.addEventListener('click', () => this.openCompareModal());
+        document.getElementById('ui-language')?.addEventListener('change', (e) => {
+            this.setUiLanguage(e.target.value);
+        });
 
-        // Enter toets in input velden triggert ook de benchmark
+        const savedLanguage = localStorage.getItem('uiLanguage') || 'en';
+        this.setUiLanguage(savedLanguage);
+
+        // Enter key in input fields also triggers benchmark
         document.querySelectorAll('#iterations, #warmup').forEach(input => {
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') this.runBenchmark();
@@ -42,7 +201,98 @@ const App = {
         });
     },
 
-    // ==================== Configuratie ====================
+    t(key, params = {}) {
+        const active = this.translations[this.uiLanguage] || this.translations.en;
+        let value = active[key] ?? this.translations.en[key] ?? key;
+        Object.entries(params).forEach(([paramKey, paramValue]) => {
+            value = value.replace(`{${paramKey}}`, String(paramValue));
+        });
+        return value;
+    },
+
+    setUiLanguage(language) {
+        this.uiLanguage = language === 'nl' ? 'nl' : 'en';
+        localStorage.setItem('uiLanguage', this.uiLanguage);
+
+        const languageSelect = document.getElementById('ui-language');
+        if (languageSelect) languageSelect.value = this.uiLanguage;
+
+        document.documentElement.lang = this.uiLanguage;
+        this.applyStaticTranslations();
+
+        if (this.currentRun) {
+            this.displayResults(this.currentRun);
+        } else {
+            this.updateRunHistory();
+        }
+
+        if (this.compareRunA && this.compareRunB) {
+            this.displayComparison();
+        }
+    },
+
+    applyStaticTranslations() {
+        const textMappings = {
+            'cfg-title': 'cfgTitle',
+            'payload-title': 'payloadTitle',
+            'parameters-title': 'parametersTitle',
+            'iterations-label': 'iterationsLabel',
+            'warmup-label': 'warmupLabel',
+            'runtime-language-title': 'runtimeLanguageTitle',
+            'compare-runs-btn': 'compareRunsBtn',
+            'select-all-btn': 'selectAllBtn',
+            'select-none-btn': 'selectNoneBtn',
+            'loading-info': 'loadingInfo',
+            'welcome-subtitle': 'welcomeSubtitle',
+            'feature-payload': 'featurePayload',
+            'feature-serialization-title': 'featureSerializationTitle',
+            'feature-serialization': 'featureSerialization',
+            'feature-roundtrip': 'featureRoundtrip',
+            'feature-memory-title': 'featureMemoryTitle',
+            'feature-memory': 'featureMemory',
+            'feature-compression-title': 'featureCompressionTitle',
+            'feature-compression': 'featureCompression',
+            'feature-throughput-title': 'featureThroughputTitle',
+            'system-info-title': 'systemInfoTitle',
+            'payload-size-filter-label': 'payloadSizeFilterLabel',
+            'results-table-title': 'resultsTableTitle',
+            'th-size': 'thSize',
+            'th-ser-avg': 'thSerAvg',
+            'th-deser-avg': 'thDeserAvg',
+            'th-rt-avg': 'thRtAvg',
+            'th-mem-peak': 'thMemPeak',
+            'th-gzip-comp': 'thGzipComp',
+            'th-throughput': 'thThroughput',
+            'run-history-title': 'runHistoryTitle',
+            'compare-header-prefix': 'compareHeaderPrefix',
+            'close-compare-btn': 'closeCompareBtn',
+            'compare-details-title': 'compareDetailsTitle',
+            'cmp-th-size': 'cmpThSize',
+            'compare-modal-title': 'compareModalTitle',
+            'compare-run-a-label': 'compareRunALabel',
+            'compare-run-b-label': 'compareRunBLabel',
+            'compare-cancel-btn': 'compareCancelBtn',
+            'compare-execute-btn': 'compareExecuteBtn'
+        };
+
+        Object.entries(textMappings).forEach(([id, key]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = this.t(key);
+        });
+
+        const loadingRunning = document.getElementById('loading-running');
+        if (loadingRunning) loadingRunning.innerHTML = this.t('loadingRunning');
+
+        const welcomeHelp = document.getElementById('welcome-help');
+        if (welcomeHelp) welcomeHelp.innerHTML = this.t('welcomeHelp');
+
+        const runButton = document.getElementById('run-btn');
+        if (runButton && !runButton.disabled) {
+            runButton.innerHTML = this.t('startBenchmark');
+        }
+    },
+
+    // ==================== Configuration ====================
 
     getConfig() {
         return {
@@ -61,17 +311,17 @@ const App = {
             .forEach(cb => cb.checked = select);
     },
 
-    // ==================== Benchmark Uitvoering ====================
+    // ==================== Benchmark Execution ====================
 
     async runBenchmark() {
         const config = this.getConfig();
 
         if (config.formats.length === 0) {
-            this.showError('Selecteer minimaal één message format.');
+            this.showError(this.t('noFormatSelected'));
             return;
         }
         if (config.sizes.length === 0) {
-            this.showError('Selecteer minimaal één payload grootte.');
+            this.showError(this.t('noSizeSelected'));
             return;
         }
 
@@ -95,15 +345,15 @@ const App = {
             const run = await response.json();
 
             if (run.status === 'failed') {
-                throw new Error(run.errorMessage || 'Benchmark uitvoering mislukt');
+                throw new Error(run.errorMessage || this.t('benchmarkFailed'));
             }
 
             this.currentRun = run;
             this.allRuns.push(run);
             this.displayResults(run);
         } catch (error) {
-            this.showError(`Benchmark fout: ${error.message}`);
-            // Toon welcome section weer als er geen resultaten zijn
+            this.showError(this.t('benchmarkError', { message: error.message }));
+            // Show welcome section again if there are no results
             if (!this.currentRun) {
                 document.getElementById('welcome-section').classList.remove('d-none');
             }
@@ -112,13 +362,13 @@ const App = {
         }
     },
 
-    // ==================== Resultaten Weergave ====================
+    // ==================== Results Display ====================
 
     displayResults(run) {
         document.getElementById('results-section').classList.remove('d-none');
         document.getElementById('welcome-section').classList.add('d-none');
 
-        // Systeem informatie
+        // System information
         const sys = run.systemInfo || {};
         const lang = (sys.language || 'python').toLowerCase();
         const langLabel = lang === 'go' ? 'Go' : 'Python';
@@ -128,28 +378,28 @@ const App = {
             : (sys.pythonVersion || 'N/A');
         document.getElementById('system-info').innerHTML = `
             <span><span class="badge ${langBadgeClass}">${langLabel}</span></span>
-            <span><strong>Platform:</strong> ${sys.platform || 'N/A'}</span>
+            <span><strong>${this.t('platform')}:</strong> ${sys.platform || 'N/A'}</span>
             <span><strong>${langLabel}:</strong> ${versionLabel}</span>
-            <span><strong>CPU:</strong> ${sys.processor || 'N/A'}</span>
-            <span><strong>Cores:</strong> ${sys.cpuCount || 'N/A'}</span>
-            <span><strong>Iteraties:</strong> ${run.config?.iterations || 'N/A'}</span>
+            <span><strong>${this.t('cpu')}:</strong> ${sys.processor || 'N/A'}</span>
+            <span><strong>${this.t('cores')}:</strong> ${sys.cpuCount || 'N/A'}</span>
+            <span><strong>${this.t('iterations')}:</strong> ${run.config?.iterations || 'N/A'}</span>
         `;
 
-        // Size tabs instellen
+        // Set up size tabs
         const sizeOrder = ['small', 'medium', 'large'];
         const sizes = [...new Set(run.results.map(r => r.payloadSizeLabel))]
             .sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b));
         this.setupSizeTabs(sizes);
 
-        // Toon charts voor eerste grootte
+        // Show charts for first size
         if (sizes.length > 0) {
             this.switchSizeTab(sizes[0]);
         }
 
-        // Data tabel
+        // Data table
         this.createDataTable(run.results);
 
-        // Run history bijwerken
+        // Update run history
         this.updateRunHistory();
     },
 
@@ -159,11 +409,11 @@ const App = {
         const container = document.getElementById('size-tabs');
         container.innerHTML = '';
 
-        // "Alle" tab
+        // "All" tab
         const allBtn = document.createElement('button');
         allBtn.className = 'btn btn-outline-primary btn-sm size-tab';
         allBtn.dataset.size = '__all__';
-        allBtn.textContent = 'Alle';
+        allBtn.textContent = this.t('all');
         allBtn.addEventListener('click', () => this.switchSizeTab('__all__'));
         container.appendChild(allBtn);
 
@@ -171,14 +421,14 @@ const App = {
             const btn = document.createElement('button');
             btn.className = `btn btn-outline-primary btn-sm size-tab ${i === 0 ? 'active' : ''}`;
             btn.dataset.size = size;
-            btn.textContent = this.capitalize(size);
+            btn.textContent = this.localizeSizeLabel(size);
             btn.addEventListener('click', () => this.switchSizeTab(size));
             container.appendChild(btn);
         });
     },
 
     switchSizeTab(size) {
-        // Update actieve tab styling
+        // Update active tab styling
         document.querySelectorAll('.size-tab').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.size === size);
         });
@@ -192,28 +442,28 @@ const App = {
         this.createCharts(results, size === '__all__');
     },
 
-    // ==================== Chart.js Grafieken ====================
+    // ==================== Chart.js Charts ====================
 
     createCharts(results, isAllSizes = false) {
-        this.createBarChart('serialize-chart', 'Serialisatie Tijd (ms)',
+        this.createBarChart('serialize-chart', this.t('chartSerialize'),
             results, r => r.serializeTimeMs.mean, isAllSizes);
-        this.createBarChart('deserialize-chart', 'Deserialisatie Tijd (ms)',
+        this.createBarChart('deserialize-chart', this.t('chartDeserialize'),
             results, r => r.deserializeTimeMs.mean, isAllSizes);
-        this.createBarChart('roundtrip-chart', 'Round-Trip Tijd (ms)',
+        this.createBarChart('roundtrip-chart', this.t('chartRoundTrip'),
             results, r => r.roundTripTimeMs.mean, isAllSizes);
-        this.createBarChart('size-chart', 'Payload Grootte (bytes)',
+        this.createBarChart('size-chart', this.t('chartPayloadSize'),
             results, r => r.serializedSizeBytes, isAllSizes, true);
-        this.createBarChart('memory-chart', 'Geheugen Piek (bytes)',
+        this.createBarChart('memory-chart', this.t('chartMemoryPeak'),
             results, r => r.memoryUsage?.totalPeakBytes || 0, isAllSizes, true);
         this.createCompressionChart('compression-chart', results, isAllSizes);
-        this.createBarChart('throughput-chart', 'Doorvoer (msg/sec)',
+        this.createBarChart('throughput-chart', this.t('chartThroughputMsg'),
             results, r => r.throughput?.serializeMsgPerSec || 0, isAllSizes, false, 'msg/sec');
-        this.createBarChart('throughput-mb-chart', 'Doorvoer (MB/sec)',
+        this.createBarChart('throughput-mb-chart', this.t('chartThroughputMb'),
             results, r => r.throughput?.serializeMbPerSec || 0, isAllSizes, false, 'MB/sec');
     },
 
     createBarChart(canvasId, title, results, valueExtractor, isGrouped = false, isSize = false, unit = null) {
-        // Verwijder bestaande chart
+        // Remove existing chart
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
@@ -223,10 +473,10 @@ const App = {
         let chartData;
 
         if (isGrouped && results.length > 0) {
-            // Gegroepeerde weergave: formats op x-as, grootte als datasets
+            // Grouped view: formats on x-axis, sizes as datasets
             chartData = this.buildGroupedChartData(results, valueExtractor);
         } else {
-            // Enkele weergave: één bar per format
+            // Single view: one bar per format
             chartData = this.buildSimpleChartData(results, valueExtractor);
         }
 
@@ -305,7 +555,7 @@ const App = {
         const sizeAlpha = { small: '0.5', medium: '0.75', large: '1.0' };
 
         const datasets = sizes.map(size => ({
-            label: this.capitalize(size),
+            label: this.localizeSizeLabel(size),
             data: formats.map(fmt => {
                 const match = results.find(r => r.format === fmt && r.payloadSizeLabel === size);
                 return match ? valueExtractor(match) : 0;
@@ -333,7 +583,7 @@ const App = {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        // Voor grouped (alle sizes) neem we alleen de eerste size voor leesbaarheid
+        // For grouped (all sizes), use only the first size for readability
         const targetResults = isGrouped
             ? (() => {
                 const sizes = [...new Set(results.map(r => r.payloadSizeLabel))];
@@ -349,7 +599,7 @@ const App = {
 
         const datasets = [
             {
-                label: 'Origineel',
+                label: this.t('original'),
                 data: originalData,
                 backgroundColor: 'rgba(149, 165, 166, 0.7)',
                 borderColor: 'rgb(149, 165, 166)',
@@ -375,7 +625,7 @@ const App = {
         }
 
         const sizeLabel = isGrouped
-            ? ` (${this.capitalize(targetResults[0]?.payloadSizeLabel || '')})`
+            ? ` (${this.localizeSizeLabel(targetResults[0]?.payloadSizeLabel || '')})`
             : '';
 
         this.charts[canvasId] = new Chart(ctx, {
@@ -388,7 +638,7 @@ const App = {
                     legend: { display: true, labels: { color: '#b0b0b0', font: { size: 11 } } },
                     title: {
                         display: true,
-                        text: `Compressie Vergelijking (bytes)${sizeLabel}`,
+                        text: `${this.t('compressionComparison')}${sizeLabel}`,
                         font: { size: 15, weight: 'bold' },
                         color: '#e0e0e0',
                         padding: { bottom: 15 },
@@ -415,13 +665,13 @@ const App = {
         });
     },
 
-    // ==================== Data Tabel ====================
+    // ==================== Data Table ====================
 
     createDataTable(results) {
         const tbody = document.getElementById('results-table-body');
         tbody.innerHTML = '';
 
-        // Sorteer: per grootte, dan per format
+        // Sort: by size, then by format
         const sorted = [...results].sort((a, b) => {
             const sizeOrder = { small: 0, medium: 1, large: 2 };
             const sizeDiff = (sizeOrder[a.payloadSizeLabel] || 0) - (sizeOrder[b.payloadSizeLabel] || 0);
@@ -447,7 +697,7 @@ const App = {
                 <td>
                     <span class="format-badge" style="background:${color.bg}">${r.format}</span>
                 </td>
-                <td>${this.capitalize(r.payloadSizeLabel)}</td>
+                <td>${this.localizeSizeLabel(r.payloadSizeLabel)}</td>
                 <td>${r.serializedSizeBytes.toLocaleString()}</td>
                 <td>${r.serializeTimeMs.mean.toFixed(4)}</td>
                 <td>${r.deserializeTimeMs.mean.toFixed(4)}</td>
@@ -467,7 +717,7 @@ const App = {
 
     exportJSON() {
         if (!this.currentRun) {
-            this.showError('Geen resultaten om te exporteren.');
+            this.showError(this.t('noResultsExport'));
             return;
         }
         const blob = new Blob(
@@ -479,14 +729,14 @@ const App = {
 
     async exportCSV() {
         if (!this.currentRun) {
-            this.showError('Geen resultaten om te exporteren.');
+            this.showError(this.t('noResultsExport'));
             return;
         }
         try {
             const response = await fetch(
                 `/api/benchmark/export/${this.currentRun.id}?format=csv`
             );
-            if (!response.ok) throw new Error('CSV export mislukt');
+            if (!response.ok) throw new Error(this.t('csvExportFailed'));
             const blob = await response.blob();
             this.downloadBlob(blob, `benchmark_${this.currentRun.id}.csv`);
         } catch (error) {
@@ -510,12 +760,13 @@ const App = {
     updateRunHistory() {
         const container = document.getElementById('run-history');
         if (this.allRuns.length === 0) {
-            container.innerHTML = '<span class="text-muted">Nog geen vorige runs.</span>';
+            container.innerHTML = `<span class="text-muted">${this.t('noPreviousRuns')}</span>`;
             return;
         }
 
         container.innerHTML = this.allRuns.map((run, i) => {
-            const time = new Date(run.timestamp).toLocaleTimeString('nl-NL');
+            const locale = this.uiLanguage === 'nl' ? 'nl-NL' : 'en-US';
+            const time = new Date(run.timestamp).toLocaleTimeString(locale);
             const formats = run.results.map(r => r.format);
             const uniqueFormats = [...new Set(formats)];
             const statusClass = run.status === 'completed' ? 'completed' : 'failed';
@@ -531,10 +782,10 @@ const App = {
                     <div>
                         <span class="status-dot ${statusClass}"></span>
                         ${langBadge}
-                        <strong>Run #${i + 1}</strong> — ${time}
+                        <strong>${this.t('runLabel')} #${i + 1}</strong> — ${time}
                     </div>
                     <div class="text-muted">
-                        ${uniqueFormats.length} formats, ${run.results.length} tests
+                        ${uniqueFormats.length} ${this.t('formats')}, ${run.results.length} ${this.t('tests')}
                     </div>
                 </div>
             `;
@@ -555,10 +806,9 @@ const App = {
         document.getElementById('run-btn').disabled = show;
         if (show) {
             document.getElementById('run-btn').innerHTML =
-                '<span class="spinner-border spinner-border-sm me-2"></span>Bezig...';
+                `<span class="spinner-border spinner-border-sm me-2"></span>${this.t('running')}`;
         } else {
-            document.getElementById('run-btn').innerHTML =
-                '<i class="bi bi-play-fill"></i> Start Benchmark';
+            document.getElementById('run-btn').innerHTML = this.t('startBenchmark');
         }
     },
 
@@ -566,7 +816,7 @@ const App = {
         const el = document.getElementById('error-alert');
         document.getElementById('error-message').textContent = msg;
         el.classList.remove('d-none');
-        // Auto-hide na 10 seconden
+        // Auto-hide after 10 seconds
         setTimeout(() => el.classList.add('d-none'), 10000);
     },
 
@@ -579,6 +829,14 @@ const App = {
         return str.charAt(0).toUpperCase() + str.slice(1);
     },
 
+    localizeSizeLabel(size) {
+        const normalized = (size || '').toLowerCase();
+        if (normalized === 'small') return this.t('sizeSmall');
+        if (normalized === 'medium') return this.t('sizeMedium');
+        if (normalized === 'large') return this.t('sizeLarge');
+        return this.capitalize(size || '');
+    },
+
     formatBytes(bytes) {
         if (bytes === 0) return '0 B';
         const units = ['B', 'KB', 'MB', 'GB'];
@@ -586,11 +844,11 @@ const App = {
         return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
     },
 
-    // ==================== Run Vergelijking ====================
+    // ==================== Run Comparison ====================
 
     openCompareModal() {
         if (this.allRuns.length < 2) {
-            this.showError('Minimaal 2 runs nodig om te vergelijken. Voer eerst meerdere benchmarks uit.');
+            this.showError(this.t('needTwoRuns'));
             return;
         }
 
@@ -598,19 +856,20 @@ const App = {
         const selectA = document.getElementById('compare-run-a');
         const selectB = document.getElementById('compare-run-b');
 
-        // Vul selects met runs
+        // Fill selects with runs
         const optionsHtml = this.allRuns.map((run, i) => {
-            const time = new Date(run.timestamp).toLocaleTimeString('nl-NL');
+            const locale = this.uiLanguage === 'nl' ? 'nl-NL' : 'en-US';
+            const time = new Date(run.timestamp).toLocaleTimeString(locale);
             const formats = [...new Set(run.results.map(r => r.format))];
             const lang = (run.systemInfo?.language || 'python').toLowerCase();
             const langLabel = lang === 'go' ? 'Go' : 'Python';
-            return `<option value="${i}">Run #${i + 1} [${langLabel}] — ${time} (${formats.length} formats)</option>`;
+            return `<option value="${i}">${this.t('runLabel')} #${i + 1} [${langLabel}] — ${time} (${formats.length} ${this.t('formats')})</option>`;
         }).join('');
 
         selectA.innerHTML = optionsHtml;
         selectB.innerHTML = optionsHtml;
 
-        // Standaard: laatste twee runs
+        // Default: last two runs
         selectA.value = this.allRuns.length - 2;
         selectB.value = this.allRuns.length - 1;
 
@@ -623,14 +882,14 @@ const App = {
         const idxB = parseInt(document.getElementById('compare-run-b').value);
 
         if (idxA === idxB) {
-            this.showError('Selecteer twee verschillende runs om te vergelijken.');
+            this.showError(this.t('compareSelectDifferent'));
             return;
         }
 
         this.compareRunA = this.allRuns[idxA];
         this.compareRunB = this.allRuns[idxB];
 
-        // Sluit modal
+        // Close modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('compare-modal'));
         if (modal) modal.hide();
 
@@ -642,7 +901,7 @@ const App = {
         const runB = this.compareRunB;
         if (!runA || !runB) return;
 
-        // Toon vergelijking sectie
+        // Show comparison section
         document.getElementById('compare-section').classList.remove('d-none');
         document.getElementById('results-section').classList.add('d-none');
         document.getElementById('welcome-section').classList.add('d-none');
@@ -650,23 +909,23 @@ const App = {
         const idxA = this.allRuns.indexOf(runA);
         const idxB = this.allRuns.indexOf(runB);
         document.getElementById('compare-title').textContent =
-            `Run #${idxA + 1} vs Run #${idxB + 1}`;
+            `${this.t('runLabel')} #${idxA + 1} vs ${this.t('runLabel')} #${idxB + 1}`;
 
-        // Vind gemeenschappelijke formats + sizes
+        // Find common formats + sizes
         const formatsA = new Set(runA.results.map(r => `${r.format}|${r.payloadSizeLabel}`));
         const commonResults = runB.results.filter(r => formatsA.has(`${r.format}|${r.payloadSizeLabel}`));
 
-        // Bouw vergelijkingsgrafieken
-        this.createCompareChart('compare-serialize-chart', 'Serialisatie Tijd (ms)',
+        // Build comparison charts
+        this.createCompareChart('compare-serialize-chart', this.t('chartSerialize'),
             runA, runB, idxA, idxB, r => r.serializeTimeMs.mean);
-        this.createCompareChart('compare-deserialize-chart', 'Deserialisatie Tijd (ms)',
+        this.createCompareChart('compare-deserialize-chart', this.t('chartDeserialize'),
             runA, runB, idxA, idxB, r => r.deserializeTimeMs.mean);
-        this.createCompareChart('compare-roundtrip-chart', 'Round-Trip Tijd (ms)',
+        this.createCompareChart('compare-roundtrip-chart', this.t('chartRoundTrip'),
             runA, runB, idxA, idxB, r => r.roundTripTimeMs.mean);
-        this.createCompareChart('compare-throughput-chart', 'Doorvoer (msg/sec)',
+        this.createCompareChart('compare-throughput-chart', this.t('chartThroughputMsg'),
             runA, runB, idxA, idxB, r => r.throughput?.serializeMsgPerSec || 0, false, 'msg/sec');
 
-        // Vergelijkingstabel
+        // Comparison table
         this.createCompareTable(runA, runB, idxA, idxB);
     },
 
@@ -679,7 +938,7 @@ const App = {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        // Gemeenschappelijke format+size combinaties (gebruik 'small' als default filter)
+        // Common format+size combinations (use 'small' as default filter)
         const sizes = [...new Set([...runA.results.map(r => r.payloadSizeLabel), ...runB.results.map(r => r.payloadSizeLabel)])];
         const targetSize = sizes.includes('small') ? 'small' : sizes[0];
 
@@ -726,7 +985,7 @@ const App = {
                     legend: { display: true, labels: { color: '#b0b0b0' } },
                     title: {
                         display: true,
-                        text: `${title} (${this.capitalize(targetSize)})`,
+                        text: `${title} (${this.localizeSizeLabel(targetSize)})`,
                         font: { size: 15, weight: 'bold' },
                         color: '#e0e0e0',
                     },
@@ -770,7 +1029,7 @@ const App = {
         allKeys.forEach(key => {
             const a = mapA[key];
             const b = mapB[key];
-            if (!a || !b) return; // Skip als niet in beide runs
+            if (!a || !b) return; // Skip if not present in both runs
 
             const color = this.formatColors[a.format] || { bg: 'rgba(128,128,128,0.7)' };
             const diff = (valA, valB) => {
@@ -784,7 +1043,7 @@ const App = {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><span class="format-badge" style="background:${color.bg}">${a.format}</span></td>
-                <td>${this.capitalize(a.payloadSizeLabel)}</td>
+                <td>${this.localizeSizeLabel(a.payloadSizeLabel)}</td>
                 <td>${a.serializeTimeMs.mean.toFixed(4)}</td>
                 <td>${b.serializeTimeMs.mean.toFixed(4)}</td>
                 <td>${diff(a.serializeTimeMs.mean, b.serializeTimeMs.mean)}</td>

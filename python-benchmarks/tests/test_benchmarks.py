@@ -1,8 +1,8 @@
 """
-Pytest Unit Tests voor Format Benchmarks
+Pytest Unit Tests for Format Benchmarks
 ==========================================
-Test serialize → deserialize round-trip integriteit voor alle message formats
-met alle payload groottes. Verifieert dat data correct bewaard blijft.
+Tests serialize → deserialize round-trip integrity for all message formats
+across all payload sizes. Verifies that data is preserved correctly.
 """
 
 import sys
@@ -10,7 +10,7 @@ import os
 import math
 import pytest
 
-# Zorg dat python-benchmarks op sys.path staat
+# Ensure python-benchmarks is on sys.path
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
@@ -42,20 +42,20 @@ BENCHMARKS = {
 
 @pytest.fixture(params=SIZES, ids=lambda s: f"size-{s}")
 def payload_size(request):
-    """Parametrize over alle payload groottes."""
+    """Parametrize across all payload sizes."""
     return request.param
 
 
 @pytest.fixture(params=list(BENCHMARKS.keys()), ids=lambda k: k.replace("'", ""))
 def benchmark_instance(request):
-    """Parametrize over alle format benchmark instanties."""
+    """Parametrize across all format benchmark instances."""
     cls = BENCHMARKS[request.param]
     return cls()
 
 
 @pytest.fixture
 def test_data(payload_size):
-    """Genereer testdata voor de gegeven grootte."""
+    """Generate test data for the given size."""
     return generate_test_data(payload_size)
 
 
@@ -64,33 +64,33 @@ def test_data(payload_size):
 
 def _compare_values(original, restored, key, tolerance=1e-6):
     """
-    Vergelijk waarden met tolerantie voor floats.
-    Sommige formats (Protobuf, FlatBuffers) hebben kleine float-precissie
-    verschillen.
+    Compare values with float tolerance.
+    Some formats (Protobuf, FlatBuffers) have small float precision
+    differences.
     """
     if isinstance(original, float) and isinstance(restored, (float, int)):
         assert math.isclose(original, float(restored), rel_tol=tolerance), (
-            f"Float mismatch voor '{key}': {original} vs {restored}"
+            f"Float mismatch for '{key}': {original} vs {restored}"
         )
     elif isinstance(original, (int, float)) and isinstance(restored, (int, float)):
         assert math.isclose(float(original), float(restored), rel_tol=tolerance), (
-            f"Numeriek mismatch voor '{key}': {original} vs {restored}"
+            f"Numeric mismatch for '{key}': {original} vs {restored}"
         )
     elif isinstance(original, str):
         assert str(restored) == original, (
-            f"String mismatch voor '{key}': '{original}' vs '{restored}'"
+            f"String mismatch for '{key}': '{original}' vs '{restored}'"
         )
     elif isinstance(original, bool):
         assert bool(restored) == original, (
-            f"Bool mismatch voor '{key}': {original} vs {restored}"
+            f"Bool mismatch for '{key}': {original} vs {restored}"
         )
     elif isinstance(original, list):
         assert len(restored) == len(original), (
-            f"Lijst lengte mismatch voor '{key}': {len(original)} vs {len(restored)}"
+            f"List length mismatch for '{key}': {len(original)} vs {len(restored)}"
         )
     elif isinstance(original, dict):
         assert len(restored) == len(original), (
-            f"Dict lengte mismatch voor '{key}': {len(original)} vs {len(restored)}"
+            f"Dict length mismatch for '{key}': {len(original)} vs {len(restored)}"
         )
 
 
@@ -98,34 +98,34 @@ def _compare_values(original, restored, key, tolerance=1e-6):
 
 
 class TestRoundTrip:
-    """Test serialize → deserialize round-trip voor alle formats en groottes."""
+    """Test serialize → deserialize round-trip for all formats and sizes."""
 
     def test_serialize_returns_bytes(self, benchmark_instance, test_data):
-        """Serialisatie moet bytes opleveren."""
+        """Serialization should return bytes."""
         result = benchmark_instance.serialize(test_data)
         assert isinstance(result, (bytes, bytearray)), (
-            f"{benchmark_instance.format_name} serialize geeft geen bytes terug"
+            f"{benchmark_instance.format_name} serialize did not return bytes"
         )
         assert len(result) > 0, (
-            f"{benchmark_instance.format_name} serialize geeft lege bytes terug"
+            f"{benchmark_instance.format_name} serialize returned empty bytes"
         )
 
     def test_deserialize_returns_data(self, benchmark_instance, test_data):
-        """Deserialisatie moet een dict-achtig object opleveren."""
+        """Deserialization should return a dict-like object."""
         serialized = benchmark_instance.serialize(test_data)
         result = benchmark_instance.deserialize(serialized)
         assert isinstance(result, dict), (
-            f"{benchmark_instance.format_name} deserialize geeft geen dict terug"
+            f"{benchmark_instance.format_name} deserialize did not return a dict"
         )
 
     def test_roundtrip_preserves_id(self, benchmark_instance, test_data):
-        """Round-trip moet het id veld bewaren."""
+        """Round-trip should preserve the id field."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         assert int(restored.get("id", 0)) == test_data["id"]
 
     def test_roundtrip_preserves_strings(self, benchmark_instance, test_data):
-        """Round-trip moet string velden bewaren."""
+        """Round-trip should preserve string fields."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
 
@@ -133,18 +133,18 @@ class TestRoundTrip:
             if field in test_data:
                 assert str(restored.get(field, "")) == test_data[field], (
                     f"{benchmark_instance.format_name}: "
-                    f"'{field}' mismatch: verwacht '{test_data[field]}', "
-                    f"kreeg '{restored.get(field)}'"
+                    f"'{field}' mismatch: expected '{test_data[field]}', "
+                    f"got '{restored.get(field)}'"
                 )
 
     def test_roundtrip_preserves_content(self, benchmark_instance, test_data):
-        """Round-trip moet het content veld bewaren."""
+        """Round-trip should preserve the content field."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         assert str(restored.get("content", "")) == test_data["content"]
 
     def test_roundtrip_preserves_score(self, benchmark_instance, test_data):
-        """Round-trip moet het score veld bewaren (met float tolerantie)."""
+        """Round-trip should preserve the score field (with float tolerance)."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         original_score = float(test_data["score"])
@@ -155,14 +155,14 @@ class TestRoundTrip:
         )
 
     def test_roundtrip_preserves_boolean(self, benchmark_instance, test_data):
-        """Round-trip moet het is_active boolean veld bewaren."""
+        """Round-trip should preserve the is_active boolean field."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         key = "is_active" if "is_active" in restored else "isActive"
         assert bool(restored.get(key, False)) == test_data["is_active"]
 
     def test_roundtrip_preserves_tags_count(self, benchmark_instance, test_data):
-        """Round-trip moet het juiste aantal tags bewaren."""
+        """Round-trip should preserve the correct number of tags."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         original_tags = test_data.get("tags", [])
@@ -173,7 +173,7 @@ class TestRoundTrip:
         )
 
     def test_roundtrip_preserves_tags_values(self, benchmark_instance, test_data):
-        """Round-trip moet de tag waarden bewaren."""
+        """Round-trip should preserve tag values."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         original_tags = test_data.get("tags", [])
@@ -185,12 +185,12 @@ class TestRoundTrip:
             )
 
     def test_roundtrip_preserves_metadata_keys(self, benchmark_instance, test_data):
-        """Round-trip moet metadata keys bewaren."""
+        """Round-trip should preserve metadata keys."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         original_meta = test_data.get("metadata", {})
         restored_meta = restored.get("metadata", {})
-        # Metadata keys moeten gelijk zijn (als strings)
+        # Metadata keys must match (as strings)
         assert set(str(k) for k in restored_meta.keys()) == set(
             str(k) for k in original_meta.keys()
         ), (
@@ -199,7 +199,7 @@ class TestRoundTrip:
         )
 
     def test_roundtrip_preserves_items_count(self, benchmark_instance, test_data):
-        """Round-trip moet het juiste aantal items bewaren."""
+        """Round-trip should preserve the correct number of items."""
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         original_items = test_data.get("items", [])
@@ -210,30 +210,30 @@ class TestRoundTrip:
         )
 
     def test_roundtrip_preserves_nested_data(self, benchmark_instance, test_data):
-        """Round-trip moet nested_data bewaren als dat er is."""
+        """Round-trip should preserve nested_data when present."""
         if "nested_data" not in test_data or test_data["nested_data"] is None:
-            pytest.skip("Geen nested_data in deze payload grootte")
+            pytest.skip("No nested_data in this payload size")
 
         serialized = benchmark_instance.serialize(test_data)
         restored = benchmark_instance.deserialize(serialized)
         nd = restored.get("nested_data")
         assert nd is not None, (
-            f"{benchmark_instance.format_name}: nested_data is None na round-trip"
+            f"{benchmark_instance.format_name}: nested_data is None after round-trip"
         )
 
-        # Controleer field1 (string)
+        # Check field1 (string)
         orig_nd = test_data["nested_data"]
         assert str(nd.get("field1", "")) == orig_nd["field1"]
 
-        # Controleer field2 (int)
+        # Check field2 (int)
         assert int(nd.get("field2", 0)) == orig_nd["field2"]
 
-        # Controleer values count
+        # Check values count
         orig_values = orig_nd.get("values", [])
         rest_values = nd.get("values", [])
         assert len(rest_values) == len(orig_values), (
             f"{benchmark_instance.format_name}: "
-            f"nested_data.values lengte mismatch"
+            f"nested_data.values length mismatch"
         )
 
 
@@ -241,10 +241,10 @@ class TestRoundTrip:
 
 
 class TestSerializedSize:
-    """Verifieer dat serialisatie groottes consistent en realistisch zijn."""
+    """Verify that serialization sizes are consistent and realistic."""
 
     def test_size_increases_with_payload(self, benchmark_instance):
-        """Grotere payloads moeten grotere geserialiseerde bytes produceren."""
+        """Larger payloads should produce larger serialized byte arrays."""
         sizes = {}
         for size_label in SIZES:
             data = generate_test_data(size_label)
@@ -261,12 +261,12 @@ class TestSerializedSize:
         )
 
     def test_serialized_not_too_large(self, benchmark_instance):
-        """Small payload mag niet groter zijn dan 5 KB."""
+        """Small payload should not be larger than 5 KB."""
         data = generate_test_data("small")
         serialized = benchmark_instance.serialize(data)
         assert len(serialized) < 5 * 1024, (
             f"{benchmark_instance.format_name}: "
-            f"small payload serialiseert naar {len(serialized)} bytes (>5KB)"
+            f"small payload serialized to {len(serialized)} bytes (>5KB)"
         )
 
 
@@ -274,10 +274,10 @@ class TestSerializedSize:
 
 
 class TestCompression:
-    """Test compressie metrics berekening."""
+    """Test compression metric calculation."""
 
     def test_compression_returns_valid_stats(self, benchmark_instance, test_data):
-        """Compressie statistieken moeten valide waarden bevatten."""
+        """Compression statistics should contain valid values."""
         serialized = benchmark_instance.serialize(test_data)
         from benchmarks.base_benchmark import BaseBenchmark
 
@@ -291,37 +291,37 @@ class TestCompression:
         assert 0 < stats["gzip_ratio"] <= 1.0 or stats["gzip_ratio"] > 1.0
 
     def test_gzip_compresses_data(self, benchmark_instance):
-        """Gzip zou de large payload efficiënt moeten comprimeren."""
+        """Gzip should compress large payloads efficiently."""
         data = generate_test_data("large")
         serialized = benchmark_instance.serialize(data)
         from benchmarks.base_benchmark import BaseBenchmark
 
         stats = BaseBenchmark._measure_compression(serialized)
 
-        # Gzip moet de data kleiner maken (ratio < 1.0 voor de meeste formats)
+        # Gzip should make data smaller (ratio < 1.0 for most formats)
         assert stats["gzip_bytes"] <= stats["original_bytes"] * 1.1, (
             f"{benchmark_instance.format_name}: "
-            f"gzip maakt data >10% groter: {stats['gzip_bytes']} vs {stats['original_bytes']}"
+            f"gzip made data >10% larger: {stats['gzip_bytes']} vs {stats['original_bytes']}"
         )
 
     def test_zstd_available(self):
-        """Controleer of zstandard beschikbaar is."""
+        """Check whether zstandard is available."""
         try:
             import zstandard  # noqa: F401
 
             assert True
         except ImportError:
-            pytest.skip("zstandard niet geïnstalleerd")
+            pytest.skip("zstandard is not installed")
 
 
 # ─── Throughput Tests ─────────────────────────────────────────────────────────
 
 
 class TestThroughput:
-    """Test throughput berekening."""
+    """Test throughput calculation."""
 
     def test_throughput_returns_valid_stats(self):
-        """Throughput berekening moet positieve waarden opleveren."""
+        """Throughput calculation should produce positive values."""
         from benchmarks.base_benchmark import BaseBenchmark
 
         result = BaseBenchmark._calculate_throughput(
@@ -334,7 +334,7 @@ class TestThroughput:
         assert result["deserialize_mb_per_sec"] > 0
 
     def test_throughput_faster_deser_higher_msgps(self):
-        """Snellere deserialisatie moet hogere msg/sec opleveren."""
+        """Faster deserialization should produce higher msg/sec."""
         from benchmarks.base_benchmark import BaseBenchmark
 
         result = BaseBenchmark._calculate_throughput(
@@ -343,7 +343,7 @@ class TestThroughput:
         assert result["deserialize_msg_per_sec"] > result["serialize_msg_per_sec"]
 
     def test_throughput_zero_time_safe(self):
-        """Throughput met nultijd mag niet crashen."""
+        """Zero-time throughput should not crash."""
         from benchmarks.base_benchmark import BaseBenchmark
 
         result = BaseBenchmark._calculate_throughput(
@@ -357,10 +357,10 @@ class TestThroughput:
 
 
 class TestBenchmarkRunner:
-    """Test de volledige benchmark runner pipeline."""
+    """Test the full benchmark runner pipeline."""
 
     def test_run_benchmark_returns_all_keys(self):
-        """run_benchmark moet alle verwachte keys opleveren."""
+        """run_benchmark should return all expected keys."""
         bench = JsonBenchmark()
         data = generate_test_data("small")
         result = bench.run_benchmark(data, iterations=10, warmup=5)
@@ -377,10 +377,10 @@ class TestBenchmarkRunner:
             "throughput",
         ]
         for key in expected_keys:
-            assert key in result, f"Verwachte key '{key}' ontbreekt in resultaat"
+            assert key in result, f"Expected key '{key}' is missing from result"
 
     def test_run_benchmark_timing_stats(self):
-        """Timing stats moeten mean/median/min/max/std_dev/p95/p99 bevatten."""
+        """Timing stats should include mean/median/min/max/std_dev/p95/p99."""
         bench = MsgpackBenchmark()
         data = generate_test_data("small")
         result = bench.run_benchmark(data, iterations=20, warmup=5)
@@ -388,11 +388,11 @@ class TestBenchmarkRunner:
         for time_key in ["serialize_time_ms", "deserialize_time_ms", "round_trip_time_ms"]:
             stats = result[time_key]
             for stat in ["mean", "median", "min", "max", "std_dev", "p95", "p99"]:
-                assert stat in stats, f"'{stat}' ontbreekt in {time_key}"
+                assert stat in stats, f"'{stat}' is missing in {time_key}"
                 assert isinstance(stats[stat], (int, float))
 
     def test_run_benchmark_compression_present(self):
-        """Compressie stats moeten aanwezig zijn in benchmark resultaat."""
+        """Compression stats should be present in benchmark result."""
         bench = BsonBenchmark()
         data = generate_test_data("small")
         result = bench.run_benchmark(data, iterations=10, warmup=5)
@@ -402,7 +402,7 @@ class TestBenchmarkRunner:
         assert comp["gzip_bytes"] > 0
 
     def test_run_benchmark_throughput_present(self):
-        """Throughput stats moeten aanwezig zijn in benchmark resultaat."""
+        """Throughput stats should be present in benchmark result."""
         bench = JsonBenchmark()
         data = generate_test_data("small")
         result = bench.run_benchmark(data, iterations=10, warmup=5)

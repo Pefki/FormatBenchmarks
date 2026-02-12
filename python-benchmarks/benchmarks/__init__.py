@@ -1,1 +1,1 @@
-# Benchmark implementaties voor verschillende message formats.
+# Benchmark implementations for different message formats.

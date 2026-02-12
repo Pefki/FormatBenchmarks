@@ -1,11 +1,11 @@
 """
 MessagePack Benchmark
 ======================
-Benchmark voor MessagePack, een efficiënt binary serialisatie format.
+Benchmark for MessagePack, an efficient binary serialization format.
 
-MessagePack is "like JSON but fast and small". Het is schema-loos
-en kan direct Python dicts serialiseren, vergelijkbaar met JSON
-maar in een compact binary formaat.
+MessagePack is "like JSON but fast and small". It is schemaless
+and can directly serialize Python dicts, similar to JSON
+but in a compact binary format.
 """
 
 import msgpack
@@ -13,16 +13,16 @@ from .base_benchmark import BaseBenchmark
 
 
 class MsgpackBenchmark(BaseBenchmark):
-    """Benchmark voor MessagePack serialisatie/deserialisatie."""
+    """Benchmark for MessagePack serialization/deserialization."""
 
     @property
     def format_name(self) -> str:
         return "MessagePack"
 
     def serialize(self, data: dict) -> bytes:
-        """Serialiseer dict naar MessagePack bytes."""
+        """Serialize dict to MessagePack bytes."""
         return msgpack.packb(data, use_bin_type=True)
 
     def deserialize(self, payload: bytes) -> dict:
-        """Deserialiseer MessagePack bytes naar dict."""
+        """Deserialize MessagePack bytes to dict."""
         return msgpack.unpackb(payload, raw=False)

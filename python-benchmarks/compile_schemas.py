@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Compileer schema bestanden voor Protobuf.
-Voer dit script uit voordat je de Protobuf benchmark runt.
+Compile schema files for Protobuf.
+Run this script before running the Protobuf benchmark.
 
-Gebruik:
+Usage:
     python compile_schemas.py
 """
 
@@ -15,14 +15,14 @@ SCHEMAS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schemas"
 
 
 def compile_protobuf():
-    """Compileer het .proto bestand naar Python code."""
+    """Compile the .proto file to Python code."""
     proto_file = os.path.join(SCHEMAS_DIR, "message.proto")
 
     if not os.path.exists(proto_file):
-        print(f"FOUT: {proto_file} niet gevonden")
+        print(f"ERROR: {proto_file} not found")
         return False
 
-    # Probeer grpc_tools eerst
+    # Try grpc_tools first
     try:
         from grpc_tools import protoc
 
@@ -33,14 +33,14 @@ def compile_protobuf():
             proto_file,
         ])
         if result == 0:
-            print("✓ Protobuf schema gecompileerd (grpc_tools)")
+            print("✓ Protobuf schema compiled (grpc_tools)")
             return True
         else:
-            print(f"✗ grpc_tools compilatie mislukt (code {result})")
+            print(f"✗ grpc_tools compilation failed (code {result})")
     except ImportError:
-        print("  grpc_tools niet beschikbaar, probeer protoc...")
+        print("  grpc_tools not available, trying protoc...")
 
-    # Probeer standalone protoc
+    # Try standalone protoc
     try:
         subprocess.run(
             [
@@ -53,25 +53,25 @@ def compile_protobuf():
             capture_output=True,
             text=True,
         )
-        print("✓ Protobuf schema gecompileerd (protoc)")
+        print("✓ Protobuf schema compiled (protoc)")
         return True
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"✗ protoc compilatie mislukt: {e}")
+        print(f"✗ protoc compilation failed: {e}")
         return False
 
 
 if __name__ == "__main__":
-    print("Compileren van schema bestanden...")
+    print("Compiling schema files...")
     print("-" * 40)
 
     success = compile_protobuf()
 
     print("-" * 40)
     if success:
-        print("Schema compilatie voltooid!")
+        print("Schema compilation completed!")
     else:
-        print("Schema compilatie mislukt!")
-        print("Installeer grpc_tools: pip install grpcio-tools")
-        print("Of installeer protoc: https://protobuf.dev/downloads/")
+        print("Schema compilation failed!")
+        print("Install grpc_tools: pip install grpcio-tools")
+        print("Or install protoc: https://protobuf.dev/downloads/")
 
     sys.exit(0 if success else 1)

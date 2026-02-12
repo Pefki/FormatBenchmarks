@@ -2,11 +2,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-dotnet
 WORKDIR /src
 
-# Kopieer csproj en restore dependencies
+# Copy csproj and restore dependencies
 COPY web-app/FormatBenchmarks/FormatBenchmarks.csproj ./web-app/FormatBenchmarks/
 RUN dotnet restore web-app/FormatBenchmarks/FormatBenchmarks.csproj
 
-# Kopieer rest van de web-app code en publiceer
+# Copy the rest of the web app code and publish
 COPY web-app/ ./web-app/
 RUN dotnet publish web-app/FormatBenchmarks/FormatBenchmarks.csproj \
     -c Release -o /app/publish --no-restore
@@ -15,7 +15,7 @@ RUN dotnet publish web-app/FormatBenchmarks/FormatBenchmarks.csproj \
 FROM golang:1.26.0 AS build-go
 WORKDIR /src
 
-# Installeer schema compilers
+# Install schema compilers
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         protobuf-compiler \
@@ -24,19 +24,19 @@ RUN apt-get update && \
         flatbuffers-compiler && \
     rm -rf /var/lib/apt/lists/*
 
-# Installeer Go code generation plugins
+# Install Go code generation plugins
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
     go install zombiezen.com/go/capnproto2/capnpc-go@latest
 
-# Kopieer Go module bestanden en download dependencies
+# Copy Go module files and download dependencies
 COPY go-benchmarks/go.mod go-benchmarks/go.sum ./go-benchmarks/
 WORKDIR /src/go-benchmarks
 RUN go mod download
 
-# Kopieer de rest van de Go code
+# Copy the rest of the Go code
 COPY go-benchmarks/ ./
 
-# Compileer schemas
+# Compile schemas
 RUN mkdir -p schemas/protobuf schemas/capnp schemas/flatbuf && \
     protoc --proto_path=schemas --go_out=schemas/protobuf \
         --go_opt=paths=source_relative schemas/message.proto && \
@@ -62,7 +62,7 @@ RUN CGO_ENABLED=0 go build -o /app/benchmark .
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# Python installeren voor benchmark uitvoering
+# Install Python for benchmark execution
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python3 \
@@ -74,7 +74,7 @@ RUN apt-get update && \
         g++ && \
     rm -rf /var/lib/apt/lists/*
 
-# Python benchmarks kopiëren en venv opzetten
+# Copy Python benchmarks and set up venv
 COPY python-benchmarks/ /app/python-benchmarks/
 RUN mkdir -p /app/python-benchmarks/results && \
     python3 -m venv /app/python-benchmarks/.venv && \
@@ -83,18 +83,18 @@ RUN mkdir -p /app/python-benchmarks/results && \
     /app/python-benchmarks/.venv/bin/python -c "import zstandard; print('zstandard OK')" && \
     /app/python-benchmarks/.venv/bin/python -c "import tracemalloc; print('tracemalloc OK')"
 
-# Compileer protobuf schema
+# Compile protobuf schema
 RUN /app/python-benchmarks/.venv/bin/python /app/python-benchmarks/compile_schemas.py
 
-# Go benchmarks binary en schema kopiëren
+# Copy Go benchmark binary and schema
 COPY --from=build-go /app/benchmark /app/go-benchmarks/benchmark
 COPY go-benchmarks/schemas/message.avsc /app/go-benchmarks/schemas/message.avsc
 RUN mkdir -p /app/go-benchmarks/results
 
-# Gepubliceerde .NET app kopiëren
+# Copy published .NET app
 COPY --from=build-dotnet /app/publish .
 
-# Configuratie
+# Configuration
 ENV ASPNETCORE_URLS=http://+:5000
 ENV Python__Path=/app/python-benchmarks/.venv/bin/python
 ENV Python__ScriptPath=/app/python-benchmarks

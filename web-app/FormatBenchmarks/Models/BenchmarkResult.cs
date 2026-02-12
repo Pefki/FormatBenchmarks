@@ -1,8 +1,8 @@
 namespace FormatBenchmarks.Models;
 
 /// <summary>
-/// Representeert een volledige benchmark uitvoering met alle resultaten.
-/// Wordt in-memory opgeslagen (geen database).
+/// Represents a full benchmark run with all results.
+/// Stored in-memory (no database).
 /// </summary>
 public class BenchmarkRun
 {
@@ -16,7 +16,7 @@ public class BenchmarkRun
 }
 
 /// <summary>
-/// Systeeminformatie van de machine waarop de benchmark draaide.
+/// System information for the machine where the benchmark ran.
 /// </summary>
 public class SystemInfo
 {
@@ -30,7 +30,7 @@ public class SystemInfo
 }
 
 /// <summary>
-/// Configuratie waarmee de benchmark is uitgevoerd.
+/// Configuration used to run the benchmark.
 /// </summary>
 public class BenchmarkConfig
 {
@@ -42,7 +42,7 @@ public class BenchmarkConfig
 }
 
 /// <summary>
-/// Resultaat van één benchmark (één format + één payload grootte).
+/// Result of one benchmark (one format + one payload size).
 /// </summary>
 public class BenchmarkResult
 {
@@ -59,7 +59,7 @@ public class BenchmarkResult
 }
 
 /// <summary>
-/// Geheugenverbruik metrics voor een benchmark.
+/// Memory usage metrics for a benchmark.
 /// </summary>
 public class MemoryUsage
 {
@@ -69,7 +69,7 @@ public class MemoryUsage
 }
 
 /// <summary>
-/// Compressie vergelijking voor geserialiseerde data.
+/// Compression comparison for serialized data.
 /// </summary>
 public class CompressionInfo
 {
@@ -81,7 +81,7 @@ public class CompressionInfo
 }
 
 /// <summary>
-/// Doorvoer metrics afgeleid van timing data.
+/// Throughput metrics derived from timing data.
 /// </summary>
 public class ThroughputInfo
 {
@@ -92,7 +92,7 @@ public class ThroughputInfo
 }
 
 /// <summary>
-/// Statistische metrics voor timing metingen.
+/// Statistical metrics for timing measurements.
 /// </summary>
 public class TimingStats
 {
@@ -106,7 +106,7 @@ public class TimingStats
 }
 
 /// <summary>
-/// Request model voor het starten van een benchmark.
+/// Request model for starting a benchmark.
 /// </summary>
 public class RunBenchmarkRequest
 {

@@ -1,13 +1,13 @@
 """
 Apache Avro Benchmark
 ======================
-Benchmark voor Apache Avro, een schema-gebaseerd binary format.
+Benchmark for Apache Avro, a schema-based binary format.
 
-Avro is ontwikkeld voor Apache Hadoop en is populair in data engineering
-en event streaming (Kafka). Het schema wordt apart van de data opgeslagen
-en ondersteunt schema evolutie.
+Avro was developed for Apache Hadoop and is popular in data engineering
+and event streaming (Kafka). The schema is stored separately from data
+and supports schema evolution.
 
-Gebruikt fastavro voor snelle Python implementatie.
+Uses fastavro for a fast Python implementation.
 """
 
 import io
@@ -24,7 +24,7 @@ _SCHEMA_PATH = os.path.abspath(
 
 
 class AvroBenchmark(BaseBenchmark):
-    """Benchmark voor Apache Avro serialisatie/deserialisatie."""
+    """Benchmark for Apache Avro serialization/deserialization."""
 
     def __init__(self):
         with open(_SCHEMA_PATH, "r", encoding="utf-8") as f:
@@ -37,16 +37,16 @@ class AvroBenchmark(BaseBenchmark):
 
     def _prepare_data(self, data: dict) -> dict:
         """
-        Bereid data voor zodat het past bij het Avro schema.
-        Avro vereist dat union types correct worden aangeboden.
+        Prepare data so it fits the Avro schema.
+        Avro requires union types to be provided correctly.
         """
         prepared = dict(data)
 
-        # nested_data is een union ["null", NestedData] in het schema
+        # nested_data is a union ["null", NestedData] in the schema
         if "nested_data" not in prepared or prepared["nested_data"] is None:
             prepared["nested_data"] = None
 
-        # items: zorg dat elk item alle velden heeft
+        # items: ensure each item has all fields
         if "items" in prepared:
             for item in prepared["items"]:
                 if "description" not in item:
@@ -59,13 +59,13 @@ class AvroBenchmark(BaseBenchmark):
         return prepared
 
     def serialize(self, data: dict) -> bytes:
-        """Serialiseer dict naar Avro binary (schemaless writer)."""
+        """Serialize dict to Avro binary (schemaless writer)."""
         prepared = self._prepare_data(data)
         buf = io.BytesIO()
         fastavro.schemaless_writer(buf, self._schema, prepared)
         return buf.getvalue()
 
     def deserialize(self, payload: bytes) -> dict:
-        """Deserialiseer Avro binary naar dict (schemaless reader)."""
+        """Deserialize Avro binary to dict (schemaless reader)."""
         buf = io.BytesIO(payload)
         return fastavro.schemaless_reader(buf, self._schema)

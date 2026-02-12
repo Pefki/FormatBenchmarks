@@ -1,9 +1,9 @@
 """
 Test Data Generator
 ====================
-Genereert test payloads van verschillende groottes voor benchmark vergelijking.
-Elke grootte bevat een mix van datatypes: strings, integers, floats, booleans,
-lijsten, geneste objecten en maps.
+Generates test payloads of different sizes for benchmark comparison.
+Each size includes a mix of data types: strings, integers, floats, booleans,
+lists, nested objects, and maps.
 """
 
 import random
@@ -11,21 +11,21 @@ import string
 
 
 def _random_string(length: int) -> str:
-    """Genereer een willekeurige string van de opgegeven lengte."""
+    """Generate a random string of the specified length."""
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
 def generate_test_data(size: str) -> dict:
     """
-    Genereer testdata van de opgegeven grootte categorie.
+    Generate test data for the requested size category.
 
     Args:
-        size: 'small', 'medium', of 'large'
+        size: 'small', 'medium', or 'large'
 
     Returns:
-        dict met testdata
+        dict with test data
     """
-    # Gebruik vaste seed voor reproduceerbare resultaten
+    # Use a fixed seed for reproducible results
     random.seed(42)
 
     if size == "small":
@@ -35,17 +35,17 @@ def generate_test_data(size: str) -> dict:
     elif size == "large":
         return _generate_large()
     else:
-        raise ValueError(f"Onbekende grootte: {size}. Gebruik 'small', 'medium', of 'large'.")
+        raise ValueError(f"Unknown size: {size}. Use 'small', 'medium', or 'large'.")
 
 
 def _generate_small() -> dict:
-    """Kleine payload ~200-500 bytes."""
+    """Small payload ~200-500 bytes."""
     return {
         "id": 1,
         "timestamp": "2026-02-10T12:00:00Z",
         "username": "testuser",
         "email": "test@example.com",
-        "content": "Hello, dit is een klein test bericht voor benchmark doeleinden.",
+        "content": "Hello, this is a small test message for benchmark purposes.",
         "tags": ["test", "small", "benchmark"],
         "metadata": {"source": "benchmark", "version": "1.0"},
         "score": 95.5,
@@ -84,7 +84,7 @@ def _generate_medium() -> dict:
 
 
 def _generate_large() -> dict:
-    """Grote payload ~20-50 KB."""
+    """Large payload ~20-50 KB."""
     return {
         "id": 99999,
         "timestamp": "2026-02-10T12:00:00Z",

@@ -41,7 +41,7 @@ func generateSmall() BenchmarkMessage {
 		Timestamp: "2026-02-10T12:00:00Z",
 		Username:  "testuser",
 		Email:     "test@example.com",
-		Content:   "Hello, dit is een klein test bericht voor benchmark doeleinden.",
+		Content:   "Hello, this is a small test message for benchmark purposes.",
 		Tags:      []string{"test", "small", "benchmark"},
 		Metadata:  map[string]string{"source": "benchmark", "version": "1.0"},
 		Score:     95.5,

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FormatBenchmarks.Controllers;
 
 /// <summary>
-/// API Controller voor benchmark operaties.
+/// API controller for benchmark operations.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -23,28 +23,28 @@ public class BenchmarkController : ControllerBase
     }
 
     /// <summary>
-    /// Start een nieuwe benchmark uitvoering.
+    /// Start a new benchmark run.
     /// POST /api/benchmark/run
     /// </summary>
     [HttpPost("run")]
     public async Task<ActionResult<BenchmarkRun>> Run([FromBody] RunBenchmarkRequest request)
     {
         _logger.LogInformation(
-            "Benchmark gestart: {Formats} formats, {Sizes} groottes, {Iterations} iteraties",
+            "Benchmark started: {Formats} formats, {Sizes} sizes, {Iterations} iterations",
             request.Formats.Count, request.Sizes.Count, request.Iterations);
 
         var result = await _service.RunBenchmarkAsync(request);
 
         if (result.Status == "failed")
         {
-            _logger.LogWarning("Benchmark mislukt: {Error}", result.ErrorMessage);
+            _logger.LogWarning("Benchmark failed: {Error}", result.ErrorMessage);
         }
 
         return Ok(result);
     }
 
     /// <summary>
-    /// Haal alle benchmark resultaten op.
+    /// Get all benchmark results.
     /// GET /api/benchmark/results
     /// </summary>
     [HttpGet("results")]
@@ -54,7 +54,7 @@ public class BenchmarkController : ControllerBase
     }
 
     /// <summary>
-    /// Vergelijk twee benchmark runs.
+    /// Compare two benchmark runs.
     /// GET /api/benchmark/compare?runA={id}&runB={id}
     /// </summary>
     [HttpGet("compare")]
@@ -64,15 +64,15 @@ public class BenchmarkController : ControllerBase
         var b = _service.GetRun(runB);
 
         if (a == null)
-            return NotFound(new { message = $"Benchmark run {runA} niet gevonden" });
+            return NotFound(new { message = $"Benchmark run {runA} not found" });
         if (b == null)
-            return NotFound(new { message = $"Benchmark run {runB} niet gevonden" });
+            return NotFound(new { message = $"Benchmark run {runB} not found" });
 
         return Ok(new { runA = a, runB = b });
     }
 
     /// <summary>
-    /// Haal een specifieke benchmark run op.
+    /// Get a specific benchmark run.
     /// GET /api/benchmark/results/{id}
     /// </summary>
     [HttpGet("results/{id:guid}")]
@@ -80,13 +80,13 @@ public class BenchmarkController : ControllerBase
     {
         var run = _service.GetRun(id);
         if (run == null)
-            return NotFound(new { message = $"Benchmark run {id} niet gevonden" });
+            return NotFound(new { message = $"Benchmark run {id} not found" });
 
         return Ok(run);
     }
 
     /// <summary>
-    /// Exporteer benchmark resultaten als JSON of CSV.
+    /// Export benchmark results as JSON or CSV.
     /// GET /api/benchmark/export/{id}?format=json|csv
     /// </summary>
     [HttpGet("export/{id:guid}")]
@@ -94,7 +94,7 @@ public class BenchmarkController : ControllerBase
     {
         var run = _service.GetRun(id);
         if (run == null)
-            return NotFound(new { message = $"Benchmark run {id} niet gevonden" });
+            return NotFound(new { message = $"Benchmark run {id} not found" });
 
         if (format.Equals("csv", StringComparison.OrdinalIgnoreCase))
         {

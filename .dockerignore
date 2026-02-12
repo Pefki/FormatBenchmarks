@@ -1,16 +1,16 @@
-# Python cache en bytecode
+# Python cache and bytecode
 **/__pycache__/
 **/*.pyc
 **/*.pyo
 
-# Test bestanden en resultaten
+# Test files and results
 python-benchmarks/results/
 python-benchmarks/tests/
 python-benchmarks/.pytest_cache/
 python-benchmarks/pytest.ini
 python-benchmarks/check_result.py
 
-# IDE en OS bestanden
+# IDE and OS files
 .git
 .gitignore
 .vscode/
@@ -18,11 +18,11 @@ python-benchmarks/check_result.py
 LICENSE
 docker-compose.yml
 
-# .NET build artefacten
+# .NET build artifacts
 web-app/FormatBenchmarks/bin/
 web-app/FormatBenchmarks/obj/
 
-# Go build artefacten
+# Go build artifacts
 go-benchmarks/benchmark
 go-benchmarks/results/
 go-benchmarks/schemas/protobuf/*.go

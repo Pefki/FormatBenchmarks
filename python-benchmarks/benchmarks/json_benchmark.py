@@ -1,8 +1,8 @@
 """
 JSON Benchmark
 ===============
-Benchmark voor het standaard JSON format (text-based).
-Gebruikt de ingebouwde Python json module.
+Benchmark for the standard JSON format (text-based).
+Uses Python's built-in json module.
 """
 
 import json
@@ -10,16 +10,16 @@ from .base_benchmark import BaseBenchmark
 
 
 class JsonBenchmark(BaseBenchmark):
-    """Benchmark voor JSON serialisatie/deserialisatie."""
+    """Benchmark for JSON serialization/deserialization."""
 
     @property
     def format_name(self) -> str:
         return "JSON"
 
     def serialize(self, data: dict) -> bytes:
-        """Serialiseer dict naar JSON bytes (UTF-8)."""
+        """Serialize dict to JSON bytes (UTF-8)."""
         return json.dumps(data, ensure_ascii=False).encode("utf-8")
 
     def deserialize(self, payload: bytes) -> dict:
-        """Deserialiseer JSON bytes naar dict."""
+        """Deserialize JSON bytes to dict."""
         return json.loads(payload.decode("utf-8"))

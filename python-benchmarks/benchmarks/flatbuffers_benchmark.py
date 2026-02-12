@@ -1,13 +1,13 @@
 """
 FlatBuffers Benchmark
 ======================
-Benchmark voor Google FlatBuffers, een zero-copy serialisatie format.
+Benchmark for Google FlatBuffers, a zero-copy serialization format.
 
-FlatBuffers is vergelijkbaar met Cap'n Proto: data kan direct gelezen worden
-zonder een volledige deserialisatie stap. Het is ontwikkeld door Google
-voor game development en performantie-kritische toepassingen.
+FlatBuffers is similar to Cap'n Proto: data can be read directly
+without a full deserialization step. It was developed by Google
+for game development and performance-critical applications.
 
-Gebruikt flatbuffers: pip install flatbuffers
+Uses flatbuffers: pip install flatbuffers
 """
 
 import struct
@@ -20,17 +20,17 @@ from .base_benchmark import BaseBenchmark
 
 
 class FlatBuffersBenchmark(BaseBenchmark):
-    """Benchmark voor FlatBuffers serialisatie/deserialisatie."""
+    """Benchmark for FlatBuffers serialization/deserialization."""
 
     @property
     def format_name(self) -> str:
         return "FlatBuffers"
 
     def serialize(self, data: dict) -> bytes:
-        """Serialiseer dict naar FlatBuffers binary."""
+        """Serialize dict to FlatBuffers binary."""
         builder = flatbuffers.Builder(4096)
 
-        # Strings en nested data moeten eerst aangemaakt worden (bottom-up)
+        # Strings and nested data must be created first (bottom-up)
         timestamp_off = builder.CreateString(data.get("timestamp", ""))
         username_off = builder.CreateString(data.get("username", ""))
         email_off = builder.CreateString(data.get("email", ""))
@@ -44,7 +44,7 @@ class FlatBuffersBenchmark(BaseBenchmark):
             builder.PrependUOffsetTRelative(off)
         tags_vec = builder.EndVector()
 
-        # Metadata (als KeyValue tabel entries)
+        # Metadata (as KeyValue table entries)
         metadata = data.get("metadata", {})
         kv_offsets = []
         for k, v in metadata.items():
@@ -122,11 +122,11 @@ class FlatBuffersBenchmark(BaseBenchmark):
         builder.Finish(msg)
         return bytes(builder.Output())
 
-    # ---- Deserialisatie helpers ----
+    # ---- Deserialization helpers ----
 
     @staticmethod
     def _read_string(tab, field_slot):
-        """Lees een string veld uit een FlatBuffers tabel."""
+        """Read a string field from a FlatBuffers table."""
         o = tab.Offset(4 + 2 * field_slot)
         if not o:
             return ""
@@ -134,7 +134,7 @@ class FlatBuffersBenchmark(BaseBenchmark):
 
     @staticmethod
     def _read_int64(tab, field_slot, default=0):
-        """Lees een int64 veld uit een FlatBuffers tabel."""
+        """Read an int64 field from a FlatBuffers table."""
         o = tab.Offset(4 + 2 * field_slot)
         if not o:
             return default
@@ -142,7 +142,7 @@ class FlatBuffersBenchmark(BaseBenchmark):
 
     @staticmethod
     def _read_float64(tab, field_slot, default=0.0):
-        """Lees een float64 veld uit een FlatBuffers tabel."""
+        """Read a float64 field from a FlatBuffers table."""
         o = tab.Offset(4 + 2 * field_slot)
         if not o:
             return default
@@ -150,7 +150,7 @@ class FlatBuffersBenchmark(BaseBenchmark):
 
     @staticmethod
     def _read_bool(tab, field_slot, default=False):
-        """Lees een bool veld uit een FlatBuffers tabel."""
+        """Read a bool field from a FlatBuffers table."""
         o = tab.Offset(4 + 2 * field_slot)
         if not o:
             return default
@@ -158,18 +158,18 @@ class FlatBuffersBenchmark(BaseBenchmark):
 
     @staticmethod
     def _read_string_vector(tab, field_slot):
-        """Lees een vector van strings uit een FlatBuffers tabel."""
+        """Read a vector of strings from a FlatBuffers table."""
         o = tab.Offset(4 + 2 * field_slot)
         if not o:
             return []
         count = tab.VectorLen(o)
         vec_start = tab.Vector(o)
-        # Elk element is een uoffset naar een string; tab.String volgt de offset
+        # Each element is a uoffset to a string; tab.String follows the offset
         return [tab.String(vec_start + i * 4).decode("utf-8") for i in range(count)]
 
     @staticmethod
     def _read_double_vector(buf, tab, field_slot):
-        """Lees een vector van doubles uit een FlatBuffers tabel."""
+        """Read a vector of doubles from a FlatBuffers table."""
         o = tab.Offset(4 + 2 * field_slot)
         if not o:
             return []
@@ -181,17 +181,17 @@ class FlatBuffersBenchmark(BaseBenchmark):
         ]
 
     def deserialize(self, payload: bytes) -> dict:
-        """Deserialiseer FlatBuffers binary naar dict (traverse alle velden)."""
+        """Deserialize FlatBuffers binary to dict (traverse all fields)."""
         buf = bytearray(payload)
 
-        # Root tabel
+        # Root table
         root_off = flatbuffers.encode.Get(
             flatbuffers.number_types.UOffsetTFlags.packer_type, buf, 0
         )
         tab = flatbuffers.table.Table(buf, root_off)
 
         result = {
-            # Scalars en strings
+            # Scalars and strings
             "id": self._read_int64(tab, 0),
             "timestamp": self._read_string(tab, 1),
             "username": self._read_string(tab, 2),
@@ -202,14 +202,14 @@ class FlatBuffersBenchmark(BaseBenchmark):
             "is_active": self._read_bool(tab, 8),
         }
 
-        # Metadata (slot 6, Vector of KeyValue tables)
+        # Metadata (slot 6, vector of KeyValue tables)
         o = tab.Offset(16)  # 4 + 2*6
         if o:
             count = tab.VectorLen(o)
             vec_start = tab.Vector(o)
             metadata = {}
             for i in range(count):
-                # Elk element is een uoffset naar een KeyValue tabel
+                # Each element is a uoffset to a KeyValue table
                 kv_pos = tab.Indirect(vec_start + i * 4)
                 kv_tab = flatbuffers.table.Table(buf, kv_pos)
                 key = self._read_string(kv_tab, 0)
@@ -230,7 +230,7 @@ class FlatBuffersBenchmark(BaseBenchmark):
                 "values": self._read_double_vector(buf, nd_tab, 2),
             }
 
-        # Items (slot 10, Vector of Item tables)
+        # Items (slot 10, vector of Item tables)
         o = tab.Offset(24)  # 4 + 2*10
         if o:
             count = tab.VectorLen(o)

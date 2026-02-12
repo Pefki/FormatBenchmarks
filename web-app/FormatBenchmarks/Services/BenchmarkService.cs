@@ -6,8 +6,8 @@ using FormatBenchmarks.Models;
 namespace FormatBenchmarks.Services;
 
 /// <summary>
-/// Service voor het uitvoeren van benchmarks via Python en het beheren van resultaten.
-/// Alle resultaten worden in-memory opgeslagen (geen database).
+/// Service for running benchmarks via Python/Go and managing results.
+/// All results are stored in-memory (no database).
 /// </summary>
 public class BenchmarkService
 {
@@ -28,7 +28,7 @@ public class BenchmarkService
         var configuredPath = configuration.GetValue<string>("Python:ScriptPath");
         if (string.IsNullOrEmpty(configuredPath))
         {
-            // Standaard: relatief pad vanuit het project naar python-benchmarks
+            // Default: relative path from the project to python-benchmarks
             _scriptPath = Path.GetFullPath(
                 Path.Combine(env.ContentRootPath, "..", "..", "python-benchmarks"));
         }
@@ -37,7 +37,7 @@ public class BenchmarkService
             _scriptPath = Path.GetFullPath(configuredPath);
         }
 
-        // Gebruik de venv Python als die bestaat, anders de geconfigureerde of systeem Python
+        // Use venv Python if available; otherwise use configured or system Python
         var configuredPython = configuration.GetValue<string>("Python:Path");
         if (!string.IsNullOrEmpty(configuredPython))
         {
@@ -49,7 +49,7 @@ public class BenchmarkService
             _pythonPath = File.Exists(venvPython) ? venvPython : "python3";
         }
 
-        // Go binary pad configureren
+        // Configure Go binary path
         var configuredGoPath = configuration.GetValue<string>("Go:BinaryPath");
         if (!string.IsNullOrEmpty(configuredGoPath))
         {
@@ -61,13 +61,13 @@ public class BenchmarkService
                 Path.Combine(env.ContentRootPath, "..", "..", "go-benchmarks", "benchmark"));
         }
 
-        _logger.LogInformation("Python pad: {PythonPath}", _pythonPath);
-        _logger.LogInformation("Script pad: {ScriptPath}", _scriptPath);
-        _logger.LogInformation("Go binary pad: {GoPath}", _goPath);
+        _logger.LogInformation("Python path: {PythonPath}", _pythonPath);
+        _logger.LogInformation("Script path: {ScriptPath}", _scriptPath);
+        _logger.LogInformation("Go binary path: {GoPath}", _goPath);
     }
 
     /// <summary>
-    /// Voer een benchmark uit door het Python of Go script te starten.
+    /// Run a benchmark by launching the Python or Go executable.
     /// </summary>
     public async Task<BenchmarkRun> RunBenchmarkAsync(RunBenchmarkRequest request)
     {
@@ -103,30 +103,30 @@ public class BenchmarkService
 
             run.SystemInfo.Language = language;
             run.Status = "completed";
-            _logger.LogInformation("Benchmark voltooid: {Id} ({Count} resultaten, taal: {Language})",
+            _logger.LogInformation("Benchmark completed: {Id} ({Count} results, language: {Language})",
                 run.Id, run.Results.Count, language);
         }
         catch (Exception ex)
         {
             run.Status = "failed";
             run.ErrorMessage = ex.Message;
-            _logger.LogError(ex, "Benchmark fout");
+            _logger.LogError(ex, "Benchmark error");
         }
 
         return run;
     }
 
     /// <summary>
-    /// Voer benchmark uit via Python.
+    /// Run benchmark via Python.
     /// </summary>
     private async Task RunPythonBenchmarkAsync(BenchmarkRun run, RunBenchmarkRequest request)
     {
-        // Output bestand voor deze run
+        // Output file for this run
         var resultsDir = Path.Combine(_scriptPath, "results");
         Directory.CreateDirectory(resultsDir);
         var outputPath = Path.Combine(resultsDir, $"run_{run.Id}.json");
 
-        // Bouw argumenten lijst
+        // Build argument list
         var args = new List<string>
         {
             Path.Combine(_scriptPath, "main.py"),
@@ -140,10 +140,10 @@ public class BenchmarkService
         args.AddRange(request.Sizes);
 
         _logger.LogInformation("Start Python benchmark: {Id}", run.Id);
-        _logger.LogInformation("Commando: {Python} {Args}",
+        _logger.LogInformation("Command: {Python} {Args}",
             _pythonPath, string.Join(" ", args));
 
-        // Start Python proces
+        // Start Python process
         var psi = new ProcessStartInfo
         {
             FileName = _pythonPath,
@@ -157,11 +157,11 @@ public class BenchmarkService
         foreach (var arg in args)
             psi.ArgumentList.Add(arg);
 
-        // Stel PWD in zodat Cap'n Proto kj library geen warning geeft
+        // Set PWD so the Cap'n Proto kj library does not warn
         psi.Environment["PWD"] = _scriptPath;
 
         using var process = Process.Start(psi)
-            ?? throw new InvalidOperationException("Kon Python proces niet starten");
+            ?? throw new InvalidOperationException("Could not start Python process");
 
         var stdout = await process.StandardOutput.ReadToEndAsync();
         var stderr = await process.StandardError.ReadToEndAsync();
@@ -176,7 +176,7 @@ public class BenchmarkService
             throw new InvalidOperationException($"Python exit code: {process.ExitCode}\n{stderr}");
         }
 
-        // Lees en parse resultaten
+        // Read and parse results
         if (File.Exists(outputPath))
         {
             var json = await File.ReadAllTextAsync(outputPath);
@@ -199,20 +199,20 @@ public class BenchmarkService
         }
         else
         {
-            throw new InvalidOperationException($"Output bestand niet gevonden: {outputPath}");
+            throw new InvalidOperationException($"Output file not found: {outputPath}");
         }
     }
 
     /// <summary>
-    /// Voer benchmark uit via Go binary.
+    /// Run benchmark via Go binary.
     /// </summary>
     private async Task RunGoBenchmarkAsync(BenchmarkRun run, RunBenchmarkRequest request)
     {
-        // Controleer of Go binary bestaat
+        // Check if Go binary exists
         if (!File.Exists(_goPath))
         {
             throw new InvalidOperationException(
-                $"Go benchmark binary niet gevonden: {_goPath}. Bouw eerst met 'go build'.");
+                $"Go benchmark binary not found: {_goPath}. Build it first with 'go build'.");
         }
 
         var goDir = Path.GetDirectoryName(_goPath) ?? _goPath;
@@ -243,11 +243,11 @@ public class BenchmarkService
         psi.ArgumentList.Add("-output");
         psi.ArgumentList.Add(outputPath);
 
-        _logger.LogInformation("Commando: {Go} {Args}",
+        _logger.LogInformation("Command: {Go} {Args}",
             _goPath, string.Join(" ", psi.ArgumentList));
 
         using var process = Process.Start(psi)
-            ?? throw new InvalidOperationException("Kon Go proces niet starten");
+            ?? throw new InvalidOperationException("Could not start Go process");
 
         var stdout = await process.StandardOutput.ReadToEndAsync();
         var stderr = await process.StandardError.ReadToEndAsync();
@@ -262,7 +262,7 @@ public class BenchmarkService
             throw new InvalidOperationException($"Go exit code: {process.ExitCode}\n{stderr}");
         }
 
-        // Lees en parse Go resultaten (zelfde JSON structuur als Python)
+        // Read and parse Go results (same JSON structure as Python)
         if (File.Exists(outputPath))
         {
             var json = await File.ReadAllTextAsync(outputPath);
@@ -285,12 +285,12 @@ public class BenchmarkService
         }
         else
         {
-            throw new InvalidOperationException($"Go output bestand niet gevonden: {outputPath}");
+            throw new InvalidOperationException($"Go output file not found: {outputPath}");
         }
     }
 
     /// <summary>
-    /// Haal alle benchmark runs op.
+    /// Get all benchmark runs.
     /// </summary>
     public List<BenchmarkRun> GetAllRuns()
     {
@@ -301,7 +301,7 @@ public class BenchmarkService
     }
 
     /// <summary>
-    /// Haal een specifieke benchmark run op.
+    /// Get a specific benchmark run.
     /// </summary>
     public BenchmarkRun? GetRun(Guid id)
     {
@@ -312,7 +312,7 @@ public class BenchmarkService
     }
 
     /// <summary>
-    /// Exporteer benchmark resultaten naar CSV formaat.
+    /// Export benchmark results to CSV format.
     /// </summary>
     public string ExportToCsv(BenchmarkRun run)
     {
@@ -332,7 +332,7 @@ public class BenchmarkService
             "SerMsgPerSec", "DeserMsgPerSec", "SerMbPerSec", "DeserMbPerSec"
         ));
 
-        // Data rijen
+        // Data rows
         foreach (var r in run.Results)
         {
             var s = r.SerializeTimeMs;
@@ -358,7 +358,7 @@ public class BenchmarkService
     }
 
     /// <summary>
-    /// Helper klasse voor het deserialiseren van Python output.
+    /// Helper class for deserializing Python output.
     /// </summary>
     private class PythonOutput
     {

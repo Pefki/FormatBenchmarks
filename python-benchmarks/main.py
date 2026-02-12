@@ -2,10 +2,10 @@
 """
 Message Format Benchmark Suite
 ===============================
-Benchmarkt verschillende binary message formats op serialisatie performantie,
-payload grootte en round-trip tijd.
+Benchmarks different binary message formats for serialization performance,
+payload size, and round-trip time.
 
-Ondersteunde formats: JSON, BSON, Protobuf, Cap'n Proto, MessagePack, Apache Avro
+Supported formats: JSON, BSON, Protobuf, Cap'n Proto, MessagePack, Apache Avro
 """
 
 import argparse
@@ -14,7 +14,7 @@ import sys
 import os
 from datetime import datetime
 
-# Voeg project root toe aan sys.path
+# Add project root to sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from benchmarks.runner import BenchmarkRunner
@@ -26,7 +26,7 @@ def main():
         description="Message Format Benchmark Suite",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Voorbeelden:
+    Examples:
   python main.py
   python main.py --iterations 5000 --formats json protobuf msgpack
   python main.py --sizes small large --output results/my_test.json
@@ -34,25 +34,25 @@ Voorbeelden:
     )
     parser.add_argument(
         "--iterations", type=int, default=1000,
-        help="Aantal iteraties per benchmark (standaard: 1000)"
+        help="Number of iterations per benchmark (default: 1000)"
     )
     parser.add_argument(
         "--formats", nargs="+",
         default=["json", "bson", "protobuf", "capnproto", "msgpack", "avro", "flatbuffers"],
-        help="Formats om te benchmarken"
+        help="Formats to benchmark"
     )
     parser.add_argument(
         "--sizes", nargs="+",
         default=["small", "medium", "large"],
-        help="Payload groottes om te testen (small, medium, large)"
+        help="Payload sizes to test (small, medium, large)"
     )
     parser.add_argument(
         "--output", type=str, default="results/benchmark_results.json",
-        help="Output bestandspad"
+        help="Output file path"
     )
     parser.add_argument(
         "--warmup", type=int, default=100,
-        help="Aantal warmup iteraties (standaard: 100)"
+        help="Number of warmup iterations (default: 100)"
     )
 
     args = parser.parse_args()
@@ -60,20 +60,20 @@ Voorbeelden:
     print("=" * 60)
     print("  Message Format Benchmark Suite")
     print("=" * 60)
-    print(f"  Iteraties:  {args.iterations}")
+    print(f"  Iterations: {args.iterations}")
     print(f"  Warmup:     {args.warmup}")
     print(f"  Formats:    {', '.join(args.formats)}")
-    print(f"  Groottes:   {', '.join(args.sizes)}")
+    print(f"  Sizes:      {', '.join(args.sizes)}")
     print(f"  Output:     {args.output}")
     print("=" * 60)
 
-    # Genereer testdata voor elke grootte
+    # Generate test data for each size
     test_data = {}
     for size in args.sizes:
         test_data[size] = generate_test_data(size)
-        print(f"  Testdata '{size}' gegenereerd")
+        print(f"  Generated test data for '{size}'")
 
-    # Voer benchmarks uit
+    # Run benchmarks
     runner = BenchmarkRunner(
         iterations=args.iterations,
         warmup=args.warmup,
@@ -82,16 +82,16 @@ Voorbeelden:
 
     results = runner.run_all(test_data)
 
-    # Zorg dat output directory bestaat
+    # Ensure output directory exists
     os.makedirs(os.path.dirname(os.path.abspath(args.output)) or ".", exist_ok=True)
 
-    # Schrijf resultaten naar bestand
+    # Write results to file
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
     print(f"\n{'=' * 60}")
-    print(f"  Resultaten geschreven naar: {args.output}")
-    print(f"  Totaal benchmarks: {len(results.get('results', []))}")
+    print(f"  Results written to: {args.output}")
+    print(f"  Total benchmarks: {len(results.get('results', []))}")
     print(f"{'=' * 60}")
 
     return 0

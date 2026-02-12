@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl" data-bs-theme="dark">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,19 +15,28 @@
             <span class="navbar-brand mb-0 h1">
                 <i class="bi bi-speedometer2 text-primary"></i> Format Benchmarks
             </span>
-            <span class="text-muted small d-none d-md-inline">
-                Message Format Benchmarking
-            </span>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small d-none d-md-inline">
+                    Message Format Benchmarking
+                </span>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="ui-language" class="small text-muted mb-0">UI</label>
+                    <select id="ui-language" class="form-select form-select-sm bg-dark text-light border-secondary" style="width:auto;">
+                        <option value="en" selected>English</option>
+                        <option value="nl">Nederlands</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </nav>
 
     <div class="container-fluid mt-3">
         <div class="row">
-            <!-- ==================== SIDEBAR: Configuratie ==================== -->
+            <!-- ==================== SIDEBAR: Configuration ==================== -->
             <div class="col-lg-3 col-md-4 mb-3">
                 <div class="card bg-dark border-secondary sticky-sidebar">
                     <div class="card-header border-secondary">
-                        <h5 class="mb-0"><i class="bi bi-gear-fill"></i> Configuratie</h5>
+                        <h5 class="mb-0"><i class="bi bi-gear-fill"></i> <span id="cfg-title">Configuration</span></h5>
                     </div>
                     <div class="card-body">
                         <!-- Message Formats -->
@@ -77,8 +86,8 @@
                             </div>
                         </div>
 
-                        <!-- Payload Grootte -->
-                        <h6 class="text-primary"><i class="bi bi-box"></i> Payload Grootte</h6>
+                        <!-- Payload Size -->
+                        <h6 class="text-primary"><i class="bi bi-box"></i> <span id="payload-title">Payload Size</span></h6>
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="size" value="small" id="size-small" checked>
@@ -95,22 +104,22 @@
                         </div>
 
                         <!-- Parameters -->
-                        <h6 class="text-primary"><i class="bi bi-sliders"></i> Parameters</h6>
+                        <h6 class="text-primary"><i class="bi bi-sliders"></i> <span id="parameters-title">Parameters</span></h6>
                         <div class="mb-3">
-                            <label for="iterations" class="form-label small">Iteraties</label>
+                            <label for="iterations" class="form-label small" id="iterations-label">Iterations</label>
                             <input type="number" class="form-control form-control-sm" id="iterations"
                                    value="1000" min="10" max="100000" step="100">
                         </div>
                         <div class="mb-3">
-                            <label for="warmup" class="form-label small">Warmup iteraties</label>
+                            <label for="warmup" class="form-label small" id="warmup-label">Warmup iterations</label>
                             <input type="number" class="form-control form-control-sm" id="warmup"
                                    value="100" min="0" max="10000" step="10">
                         </div>
 
-                        <!-- Taal / Runtime -->
-                        <h6 class="text-primary"><i class="bi bi-translate"></i> Taal / Runtime</h6>
+                        <!-- Runtime Language -->
+                        <h6 class="text-primary"><i class="bi bi-translate"></i> <span id="runtime-language-title">Runtime Language</span></h6>
                         <div class="mb-3">
-                            <div class="btn-group w-100" role="group" aria-label="Taal selectie">
+                            <div class="btn-group w-100" role="group" aria-label="Language selection">
                                 <input type="radio" class="btn-check" name="language" id="lang-python" value="python" checked autocomplete="off">
                                 <label class="btn btn-outline-primary btn-sm" for="lang-python">
                                     <i class="bi bi-filetype-py"></i> Python
@@ -131,16 +140,16 @@
 
                         <!-- Compare Button -->
                         <button id="compare-btn" class="btn btn-outline-info w-100 mt-2">
-                            <i class="bi bi-arrow-left-right"></i> Vergelijk Runs
+                            <i class="bi bi-arrow-left-right"></i> <span id="compare-runs-btn">Compare Runs</span>
                         </button>
 
                         <!-- Select All / None -->
                         <div class="d-flex gap-2 mt-2">
                             <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="App.selectAllFormats(true)">
-                                Alles selecteren
+                                <span id="select-all-btn">Select All</span>
                             </button>
                             <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="App.selectAllFormats(false)">
-                                Niets selecteren
+                                <span id="select-none-btn">Select None</span>
                             </button>
                         </div>
                     </div>
@@ -160,12 +169,12 @@
                     <div class="card bg-dark border-secondary">
                         <div class="card-body text-center py-5">
                             <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                                <span class="visually-hidden">Laden...</span>
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            <p class="mt-3 text-muted mb-0">
-                                <i class="bi bi-hourglass-split"></i> Benchmarks worden uitgevoerd...
+                            <p class="mt-3 text-muted mb-0" id="loading-running">
+                                <i class="bi bi-hourglass-split"></i> Running benchmarks...
                             </p>
-                            <p class="text-muted small">Dit kan even duren afhankelijk van het aantal iteraties.</p>
+                            <p class="text-muted small" id="loading-info">This may take a while depending on the number of iterations.</p>
                         </div>
                     </div>
                 </div>
@@ -176,8 +185,8 @@
                         <div class="card-body text-center py-5">
                             <i class="bi bi-speedometer2 display-1 text-primary"></i>
                             <h2 class="mt-3">Message Format Benchmarks</h2>
-                            <p class="text-muted lead">
-                                Vergelijk de performantie van verschillende (binary) message formats.
+                            <p class="text-muted lead" id="welcome-subtitle">
+                                Compare performance across different (binary) message formats.
                             </p>
                             <div class="row justify-content-center mt-4">
                                 <div class="col-md-8">
@@ -192,50 +201,50 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-muted small mt-4 mb-0">
-                                Selecteer de gewenste formats en parameters in het configuratiepaneel
-                                en klik op <strong>"Start Benchmark"</strong> om te beginnen.
+                            <p class="text-muted small mt-4 mb-0" id="welcome-help">
+                                Select the desired formats and parameters in the configuration panel
+                                and click <strong>"Start Benchmark"</strong> to begin.
                             </p>
                             <div class="row mt-4 g-3">
                                 <div class="col-md-3">
                                     <div class="feature-card">
                                         <i class="bi bi-box-seam text-primary fs-3"></i>
                                         <div class="small mt-1"><strong>Payload Size</strong></div>
-                                        <div class="text-muted x-small">Vergelijk geserialiseerde groottes</div>
+                                        <div class="text-muted x-small" id="feature-payload">Compare serialized payload sizes</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="feature-card">
                                         <i class="bi bi-arrow-repeat text-success fs-3"></i>
-                                        <div class="small mt-1"><strong>Serialisatie</strong></div>
-                                        <div class="text-muted x-small">Meet (de)serialisatie snelheid</div>
+                                        <div class="small mt-1"><strong id="feature-serialization-title">Serialization</strong></div>
+                                        <div class="text-muted x-small" id="feature-serialization">Measure (de)serialization speed</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="feature-card">
                                         <i class="bi bi-arrow-left-right text-danger fs-3"></i>
                                         <div class="small mt-1"><strong>Round-Trip</strong></div>
-                                        <div class="text-muted x-small">Totale serialisatie cyclus</div>
+                                        <div class="text-muted x-small" id="feature-roundtrip">Total serialization cycle</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="feature-card">
                                         <i class="bi bi-memory text-danger fs-3"></i>
-                                        <div class="small mt-1"><strong>Geheugen</strong></div>
-                                        <div class="text-muted x-small">Peak memory &amp; round-trip analyse</div>
+                                        <div class="small mt-1"><strong id="feature-memory-title">Memory</strong></div>
+                                        <div class="text-muted x-small" id="feature-memory">Peak memory &amp; round-trip analysis</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="feature-card">
                                         <i class="bi bi-file-zip text-info fs-3"></i>
-                                        <div class="small mt-1"><strong>Compressie</strong></div>
-                                        <div class="text-muted x-small">Gzip &amp; Zstandard vergelijking</div>
+                                        <div class="small mt-1"><strong id="feature-compression-title">Compression</strong></div>
+                                        <div class="text-muted x-small" id="feature-compression">Gzip &amp; Zstandard comparison</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="feature-card">
                                         <i class="bi bi-lightning-fill text-warning fs-3"></i>
-                                        <div class="small mt-1"><strong>Doorvoer</strong></div>
+                                        <div class="small mt-1"><strong id="feature-throughput-title">Throughput</strong></div>
                                         <div class="text-muted x-small">msg/sec &amp; MB/sec throughput</div>
                                     </div>
                                 </div>
@@ -251,7 +260,7 @@
                         <div class="card-body py-2">
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <i class="bi bi-pc-display text-primary"></i>
-                                <strong class="small">Systeem Informatie</strong>
+                                <strong class="small" id="system-info-title">System Information</strong>
                             </div>
                             <div id="system-info" class="d-flex gap-4 flex-wrap small text-muted"></div>
                         </div>
@@ -259,7 +268,7 @@
 
                     <!-- Size Tabs -->
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <span class="small text-muted">Payload grootte:</span>
+                        <span class="small text-muted" id="payload-size-filter-label">Payload size:</span>
                         <div id="size-tabs" class="btn-group" role="group"></div>
                     </div>
 
@@ -326,7 +335,7 @@
                     <!-- Data Table -->
                     <div class="card bg-dark border-secondary mb-3">
                         <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-table"></i> Resultaten Tabel</h5>
+                            <h5 class="mb-0"><i class="bi bi-table"></i> <span id="results-table-title">Results Table</span></h5>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-outline-success" onclick="App.exportJSON()">
                                     <i class="bi bi-filetype-json"></i> Export JSON
@@ -341,17 +350,17 @@
                                 <thead class="table-header-sticky">
                                     <tr>
                                         <th>Format</th>
-                                        <th>Grootte</th>
+                                        <th id="th-size">Size</th>
                                         <th>Payload (bytes)</th>
-                                        <th>Ser. gem. (ms)</th>
-                                        <th>Deser. gem. (ms)</th>
-                                        <th>Round-Trip gem. (ms)</th>
+                                        <th id="th-ser-avg">Ser. avg (ms)</th>
+                                        <th id="th-deser-avg">Deser. avg (ms)</th>
+                                        <th id="th-rt-avg">Round-Trip avg (ms)</th>
                                         <th>Ser. P95 (ms)</th>
                                         <th>Deser. P95 (ms)</th>
                                         <th>Std Dev (ms)</th>
-                                        <th>Geheugen Piek</th>
-                                        <th>Gzip Compressie</th>
-                                        <th>Doorvoer (msg/s)</th>
+                                        <th id="th-mem-peak">Memory Peak</th>
+                                        <th id="th-gzip-comp">Gzip Compression</th>
+                                        <th id="th-throughput">Throughput (msg/s)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="results-table-body"></tbody>
@@ -362,10 +371,10 @@
                     <!-- Run History -->
                     <div class="card bg-dark border-secondary mb-3">
                         <div class="card-header border-secondary">
-                            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Vorige Runs</h5>
+                            <h5 class="mb-0"><i class="bi bi-clock-history"></i> <span id="run-history-title">Previous Runs</span></h5>
                         </div>
                         <div class="card-body">
-                            <div id="run-history" class="small text-muted">Nog geen vorige runs.</div>
+                            <div id="run-history" class="small text-muted">No previous runs yet.</div>
                         </div>
                     </div>
                 </div>
@@ -376,10 +385,10 @@
                         <div class="card-header border-secondary d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
                                 <i class="bi bi-arrow-left-right text-info"></i>
-                                Run Vergelijking: <span id="compare-title"></span>
+                                <span id="compare-header-prefix">Run Comparison:</span> <span id="compare-title"></span>
                             </h5>
                             <button class="btn btn-sm btn-outline-secondary" onclick="App.closeCompare()">
-                                <i class="bi bi-x-lg"></i> Sluiten
+                                <i class="bi bi-x-lg"></i> <span id="close-compare-btn">Close</span>
                             </button>
                         </div>
                     </div>
@@ -419,14 +428,14 @@
                     <!-- Compare Table -->
                     <div class="card bg-dark border-secondary mb-3">
                         <div class="card-header border-secondary">
-                            <h5 class="mb-0"><i class="bi bi-table"></i> Vergelijking Details</h5>
+                            <h5 class="mb-0"><i class="bi bi-table"></i> <span id="compare-details-title">Comparison Details</span></h5>
                         </div>
                         <div class="card-body table-responsive p-0">
                             <table class="table table-dark table-striped table-hover mb-0">
                                 <thead class="table-header-sticky">
                                     <tr>
                                         <th>Format</th>
-                                        <th>Grootte</th>
+                                        <th id="cmp-th-size">Size</th>
                                         <th>Ser. Run A (ms)</th>
                                         <th>Ser. Run B (ms)</th>
                                         <th>Δ Ser.</th>
@@ -449,23 +458,23 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark border-secondary">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title"><i class="bi bi-arrow-left-right text-info"></i> Runs Vergelijken</h5>
+                    <h5 class="modal-title"><i class="bi bi-arrow-left-right text-info"></i> <span id="compare-modal-title">Compare Runs</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="compare-run-a" class="form-label">Run A (basis)</label>
+                        <label for="compare-run-a" class="form-label" id="compare-run-a-label">Run A (baseline)</label>
                         <select id="compare-run-a" class="form-select form-select-sm bg-dark text-light border-secondary"></select>
                     </div>
                     <div class="mb-3">
-                        <label for="compare-run-b" class="form-label">Run B (vergelijking)</label>
+                        <label for="compare-run-b" class="form-label" id="compare-run-b-label">Run B (comparison)</label>
                         <select id="compare-run-b" class="form-select form-select-sm bg-dark text-light border-secondary"></select>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="compare-cancel-btn">Cancel</button>
                     <button type="button" class="btn btn-info" onclick="App.executeCompare()">
-                        <i class="bi bi-arrow-left-right"></i> Vergelijken
+                        <i class="bi bi-arrow-left-right"></i> <span id="compare-execute-btn">Compare</span>
                     </button>
                 </div>
             </div>
