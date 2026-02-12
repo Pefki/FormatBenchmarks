@@ -136,7 +136,9 @@ const App = {
         `;
 
         // Size tabs instellen
-        const sizes = [...new Set(run.results.map(r => r.payloadSizeLabel))];
+        const sizeOrder = ['small', 'medium', 'large'];
+        const sizes = [...new Set(run.results.map(r => r.payloadSizeLabel))]
+            .sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b));
         this.setupSizeTabs(sizes);
 
         // Toon charts voor eerste grootte
