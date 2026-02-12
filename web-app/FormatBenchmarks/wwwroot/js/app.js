@@ -57,6 +57,8 @@ const App = {
             compareRunBLabel: 'Run B (comparison)',
             compareCancelBtn: 'Cancel',
             compareExecuteBtn: 'Compare',
+            compareModeCommon: 'Common Results',
+            compareModeCombined: 'Combined Results',
             noFormatSelected: 'Select at least one message format.',
             noSizeSelected: 'Select at least one payload size.',
             benchmarkFailed: 'Benchmark execution failed',
@@ -73,6 +75,12 @@ const App = {
             chartMemoryPeak: 'Memory Peak (bytes)',
             chartThroughputMsg: 'Throughput (msg/sec)',
             chartThroughputMb: 'Throughput (MB/sec)',
+            chartThroughputDeserMsg: 'Deserialization Throughput (msg/sec)',
+            chartThroughputDeserMb: 'Deserialization Throughput (MB/sec)',
+            chartGzipBytes: 'Gzip Compressed Size (bytes)',
+            chartGzipRatio: 'Gzip Compression Ratio (%)',
+            chartZstdBytes: 'Zstandard Compressed Size (bytes)',
+            chartZstdRatio: 'Zstandard Compression Ratio (%)',
             original: 'Original',
             compressionComparison: 'Compression Comparison (bytes)',
             noResultsExport: 'No results to export.',
@@ -132,6 +140,8 @@ const App = {
             compareRunBLabel: 'Run B (vergelijking)',
             compareCancelBtn: 'Annuleren',
             compareExecuteBtn: 'Vergelijken',
+            compareModeCommon: 'Gemeenschappelijke Resultaten',
+            compareModeCombined: 'Gecombineerde Resultaten',
             noFormatSelected: 'Selecteer minimaal één message format.',
             noSizeSelected: 'Selecteer minimaal één payload grootte.',
             benchmarkFailed: 'Benchmark uitvoering mislukt',
@@ -148,6 +158,12 @@ const App = {
             chartMemoryPeak: 'Geheugen Piek (bytes)',
             chartThroughputMsg: 'Doorvoer (msg/sec)',
             chartThroughputMb: 'Doorvoer (MB/sec)',
+            chartThroughputDeserMsg: 'Deserialisatie Doorvoer (msg/sec)',
+            chartThroughputDeserMb: 'Deserialisatie Doorvoer (MB/sec)',
+            chartGzipBytes: 'Gzip Gecomprimeerde Grootte (bytes)',
+            chartGzipRatio: 'Gzip Compressie Ratio (%)',
+            chartZstdBytes: 'Zstandard Gecomprimeerde Grootte (bytes)',
+            chartZstdRatio: 'Zstandard Compressie Ratio (%)',
             original: 'Origineel',
             compressionComparison: 'Compressie Vergelijking (bytes)',
             noResultsExport: 'Geen resultaten om te exporteren.',
@@ -180,6 +196,8 @@ const App = {
     // Comparison state
     compareRunA: null,
     compareRunB: null,
+    compareData: null,
+    compareSelectedSize: '__all__',
 
     // ==================== Initialization ====================
 
@@ -255,6 +273,7 @@ const App = {
             'feature-throughput-title': 'featureThroughputTitle',
             'system-info-title': 'systemInfoTitle',
             'payload-size-filter-label': 'payloadSizeFilterLabel',
+            'compare-payload-size-filter-label': 'payloadSizeFilterLabel',
             'results-table-title': 'resultsTableTitle',
             'th-size': 'thSize',
             'th-ser-avg': 'thSerAvg',
@@ -394,10 +413,9 @@ const App = {
         // Show charts for first size
         if (sizes.length > 0) {
             this.switchSizeTab(sizes[0]);
+        } else {
+            this.createDataTable([]);
         }
-
-        // Data table
-        this.createDataTable(run.results);
 
         // Update run history
         this.updateRunHistory();
@@ -440,6 +458,7 @@ const App = {
             : this.currentRun.results.filter(r => r.payloadSizeLabel === size);
 
         this.createCharts(results, size === '__all__');
+        this.createDataTable(results);
     },
 
     // ==================== Chart.js Charts ====================
@@ -908,28 +927,168 @@ const App = {
 
         const idxA = this.allRuns.indexOf(runA);
         const idxB = this.allRuns.indexOf(runB);
+        const comparison = this.buildComparisonData(runA, runB);
+        this.compareData = comparison;
+        const modeLabel = comparison.sameLanguage
+            ? this.t('compareModeCommon')
+            : this.t('compareModeCombined');
         document.getElementById('compare-title').textContent =
-            `${this.t('runLabel')} #${idxA + 1} vs ${this.t('runLabel')} #${idxB + 1}`;
+            `${this.t('runLabel')} #${idxA + 1} vs ${this.t('runLabel')} #${idxB + 1} (${modeLabel})`;
 
-        // Find common formats + sizes
-        const formatsA = new Set(runA.results.map(r => `${r.format}|${r.payloadSizeLabel}`));
-        const commonResults = runB.results.filter(r => formatsA.has(`${r.format}|${r.payloadSizeLabel}`));
+        const sizeOrder = { small: 0, medium: 1, large: 2 };
+        const sizes = [...new Set(comparison.entries.map(entry => entry.payloadSizeLabel))]
+            .sort((a, b) => (sizeOrder[a] ?? 99) - (sizeOrder[b] ?? 99));
 
-        // Build comparison charts
-        this.createCompareChart('compare-serialize-chart', this.t('chartSerialize'),
-            runA, runB, idxA, idxB, r => r.serializeTimeMs.mean);
-        this.createCompareChart('compare-deserialize-chart', this.t('chartDeserialize'),
-            runA, runB, idxA, idxB, r => r.deserializeTimeMs.mean);
-        this.createCompareChart('compare-roundtrip-chart', this.t('chartRoundTrip'),
-            runA, runB, idxA, idxB, r => r.roundTripTimeMs.mean);
-        this.createCompareChart('compare-throughput-chart', this.t('chartThroughputMsg'),
-            runA, runB, idxA, idxB, r => r.throughput?.serializeMsgPerSec || 0, false, 'msg/sec');
+        this.setupCompareSizeTabs(sizes);
 
-        // Comparison table
-        this.createCompareTable(runA, runB, idxA, idxB);
+        const preferredSize =
+            (this.compareSelectedSize === '__all__' || sizes.includes(this.compareSelectedSize))
+                ? this.compareSelectedSize
+                : (sizes.includes('small') ? 'small' : (sizes[0] || '__all__'));
+
+        this.switchCompareSizeTab(preferredSize, idxA, idxB);
     },
 
-    createCompareChart(canvasId, title, runA, runB, idxA, idxB, valueExtractor, isSize = false, unit = null) {
+    setupCompareSizeTabs(sizes) {
+        const container = document.getElementById('compare-size-tabs');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        const allBtn = document.createElement('button');
+        allBtn.className = 'btn btn-outline-primary btn-sm compare-size-tab';
+        allBtn.dataset.size = '__all__';
+        allBtn.textContent = this.t('all');
+        allBtn.addEventListener('click', () => this.switchCompareSizeTab('__all__'));
+        container.appendChild(allBtn);
+
+        sizes.forEach(size => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-outline-primary btn-sm compare-size-tab';
+            btn.dataset.size = size;
+            btn.textContent = this.localizeSizeLabel(size);
+            btn.addEventListener('click', () => this.switchCompareSizeTab(size));
+            container.appendChild(btn);
+        });
+    },
+
+    switchCompareSizeTab(size, idxA = null, idxB = null) {
+        document.querySelectorAll('.compare-size-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.size === size);
+        });
+
+        this.compareSelectedSize = size;
+
+        if (!this.compareData) return;
+
+        const runAIndex = idxA ?? this.allRuns.indexOf(this.compareRunA);
+        const runBIndex = idxB ?? this.allRuns.indexOf(this.compareRunB);
+        const entries = this.getFilteredComparisonEntries(this.compareData, size);
+
+        this.createCompareChart('compare-serialize-chart', this.t('chartSerialize'),
+            entries, runAIndex, runBIndex, r => r.serializeTimeMs.mean, false, null, size);
+        this.createCompareChart('compare-deserialize-chart', this.t('chartDeserialize'),
+            entries, runAIndex, runBIndex, r => r.deserializeTimeMs.mean, false, null, size);
+        this.createCompareChart('compare-roundtrip-chart', this.t('chartRoundTrip'),
+            entries, runAIndex, runBIndex, r => r.roundTripTimeMs.mean, false, null, size);
+        this.createCompareChart('compare-throughput-chart', this.t('chartThroughputMsg'),
+            entries, runAIndex, runBIndex, r => r.throughput?.serializeMsgPerSec, false, 'msg/sec', size);
+        this.createCompareChart('compare-payload-size-chart', this.t('chartPayloadSize'),
+            entries, runAIndex, runBIndex, r => r.serializedSizeBytes, true, null, size);
+        this.createCompareChart('compare-memory-chart', this.t('chartMemoryPeak'),
+            entries, runAIndex, runBIndex, r => r.memoryUsage?.totalPeakBytes, true, null, size);
+        this.createCompareChart('compare-gzip-bytes-chart', this.t('chartGzipBytes'),
+            entries, runAIndex, runBIndex, r => r.compression?.gzipBytes, true, null, size);
+        this.createCompareChart('compare-gzip-ratio-chart', this.t('chartGzipRatio'),
+            entries, runAIndex, runBIndex,
+            r => Number.isFinite(r.compression?.gzipRatio) ? r.compression.gzipRatio * 100 : null,
+            false, '%', size);
+        this.createCompareChart('compare-throughput-deser-chart', this.t('chartThroughputDeserMsg'),
+            entries, runAIndex, runBIndex, r => r.throughput?.deserializeMsgPerSec, false, 'msg/sec', size);
+        this.createCompareChart('compare-throughput-mb-chart', this.t('chartThroughputMb'),
+            entries, runAIndex, runBIndex, r => r.throughput?.serializeMbPerSec, false, 'MB/sec', size);
+        this.createCompareChart('compare-throughput-deser-mb-chart', this.t('chartThroughputDeserMb'),
+            entries, runAIndex, runBIndex, r => r.throughput?.deserializeMbPerSec, false, 'MB/sec', size);
+
+        this.updateCompareZstdCharts(entries, runAIndex, runBIndex, size);
+
+        this.createCompareTable(entries);
+    },
+
+    updateCompareZstdCharts(entries, idxA, idxB, selectedSize) {
+        const zstdBytesCard = document.getElementById('compare-zstd-bytes-card');
+        const zstdRatioCard = document.getElementById('compare-zstd-ratio-card');
+        const hasZstd = entries.some(item =>
+            (item.a?.compression?.zstdBytes ?? 0) > 0 || (item.b?.compression?.zstdBytes ?? 0) > 0);
+
+        if (!hasZstd) {
+            zstdBytesCard?.classList.add('d-none');
+            zstdRatioCard?.classList.add('d-none');
+
+            ['compare-zstd-bytes-chart', 'compare-zstd-ratio-chart'].forEach(chartId => {
+                if (this.charts[chartId]) {
+                    this.charts[chartId].destroy();
+                    delete this.charts[chartId];
+                }
+            });
+            return;
+        }
+
+        zstdBytesCard?.classList.remove('d-none');
+        zstdRatioCard?.classList.remove('d-none');
+
+        this.createCompareChart('compare-zstd-bytes-chart', this.t('chartZstdBytes'),
+            entries, idxA, idxB, r => r.compression?.zstdBytes, true, null, selectedSize);
+        this.createCompareChart('compare-zstd-ratio-chart', this.t('chartZstdRatio'),
+            entries, idxA, idxB,
+            r => Number.isFinite(r.compression?.zstdRatio) ? r.compression.zstdRatio * 100 : null,
+            false, '%', selectedSize);
+    },
+
+    getFilteredComparisonEntries(comparison, size) {
+        if (size === '__all__') return comparison.entries;
+        return comparison.entries.filter(entry => entry.payloadSizeLabel === size);
+    },
+
+    getRunLanguage(run) {
+        return (run?.systemInfo?.language || 'python').toLowerCase();
+    },
+
+    buildComparisonData(runA, runB) {
+        const mapKey = r => `${r.format}|${r.payloadSizeLabel}`;
+        const mapA = Object.fromEntries(runA.results.map(r => [mapKey(r), r]));
+        const mapB = Object.fromEntries(runB.results.map(r => [mapKey(r), r]));
+
+        const sameLanguage = this.getRunLanguage(runA) === this.getRunLanguage(runB);
+        const keys = sameLanguage
+            ? Object.keys(mapA).filter(key => key in mapB)
+            : [...new Set([...Object.keys(mapA), ...Object.keys(mapB)])];
+
+        const entries = keys
+            .map(key => {
+                const [format, payloadSizeLabel] = key.split('|');
+                return {
+                    key,
+                    format,
+                    payloadSizeLabel,
+                    a: mapA[key] || null,
+                    b: mapB[key] || null,
+                };
+            })
+            .sort((left, right) => {
+                if (left.format === right.format) {
+                    const order = { small: 0, medium: 1, large: 2 };
+                    const leftOrder = order[(left.payloadSizeLabel || '').toLowerCase()] ?? 99;
+                    const rightOrder = order[(right.payloadSizeLabel || '').toLowerCase()] ?? 99;
+                    return leftOrder - rightOrder;
+                }
+                return left.format.localeCompare(right.format);
+            });
+
+        return { entries, sameLanguage };
+    },
+
+    createCompareChart(canvasId, title, entries, idxA, idxB, valueExtractor, isSize = false, unit = null, selectedSize = '__all__') {
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
@@ -938,27 +1097,25 @@ const App = {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        // Common format+size combinations (use 'small' as default filter)
-        const sizes = [...new Set([...runA.results.map(r => r.payloadSizeLabel), ...runB.results.map(r => r.payloadSizeLabel)])];
-        const targetSize = sizes.includes('small') ? 'small' : sizes[0];
-
-        const resultsA = runA.results.filter(r => r.payloadSizeLabel === targetSize);
-        const resultsB = runB.results.filter(r => r.payloadSizeLabel === targetSize);
-        const allFormats = [...new Set([...resultsA.map(r => r.format), ...resultsB.map(r => r.format)])];
-
-        const dataA = allFormats.map(fmt => {
-            const match = resultsA.find(r => r.format === fmt);
-            return match ? valueExtractor(match) : 0;
+        const labels = entries.map(item =>
+            selectedSize === '__all__'
+                ? `${item.format} (${this.localizeSizeLabel(item.payloadSizeLabel)})`
+                : item.format);
+        const dataA = entries.map(item => {
+            if (!item.a) return null;
+            const value = valueExtractor(item.a);
+            return Number.isFinite(value) ? value : null;
         });
-        const dataB = allFormats.map(fmt => {
-            const match = resultsB.find(r => r.format === fmt);
-            return match ? valueExtractor(match) : 0;
+        const dataB = entries.map(item => {
+            if (!item.b) return null;
+            const value = valueExtractor(item.b);
+            return Number.isFinite(value) ? value : null;
         });
 
         this.charts[canvasId] = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: allFormats,
+                labels,
                 datasets: [
                     {
                         label: `Run #${idxA + 1}`,
@@ -985,7 +1142,9 @@ const App = {
                     legend: { display: true, labels: { color: '#b0b0b0' } },
                     title: {
                         display: true,
-                        text: `${title} (${this.localizeSizeLabel(targetSize)})`,
+                        text: selectedSize === '__all__'
+                            ? title
+                            : `${title} (${this.localizeSizeLabel(selectedSize)})`,
                         font: { size: 15, weight: 'bold' },
                         color: '#e0e0e0',
                     },
@@ -1016,42 +1175,134 @@ const App = {
         });
     },
 
-    createCompareTable(runA, runB, idxA, idxB) {
+    createCompareTable(entries) {
         const tbody = document.getElementById('compare-table-body');
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        const mapKey = r => `${r.format}|${r.payloadSizeLabel}`;
-        const mapA = Object.fromEntries(runA.results.map(r => [mapKey(r), r]));
-        const mapB = Object.fromEntries(runB.results.map(r => [mapKey(r), r]));
-        const allKeys = [...new Set([...Object.keys(mapA), ...Object.keys(mapB)])].sort();
+        const valueCell = (value, formatter) => {
+            if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+            return formatter(value);
+        };
 
-        allKeys.forEach(key => {
-            const a = mapA[key];
-            const b = mapB[key];
-            if (!a || !b) return; // Skip if not present in both runs
+        const diffCell = (valueA, valueB) => {
+            if (!Number.isFinite(valueA) || !Number.isFinite(valueB) || valueA === 0) return '—';
+            const pct = ((valueB - valueA) / valueA * 100);
+            const cls = pct < 0 ? 'text-success' : pct > 0 ? 'text-danger' : 'text-muted';
+            const sign = pct > 0 ? '+' : '';
+            return `<span class="${cls}">${sign}${pct.toFixed(1)}%</span>`;
+        };
 
-            const color = this.formatColors[a.format] || { bg: 'rgba(128,128,128,0.7)' };
-            const diff = (valA, valB) => {
-                if (valA === 0) return '—';
-                const pct = ((valB - valA) / valA * 100);
-                const cls = pct < 0 ? 'text-success' : pct > 0 ? 'text-danger' : 'text-muted';
-                const sign = pct > 0 ? '+' : '';
-                return `<span class="${cls}">${sign}${pct.toFixed(1)}%</span>`;
-            };
+        const metricRows = (item) => {
+            const a = item.a;
+            const b = item.b;
+            const hasAnyZstd = (a?.compression?.zstdBytes ?? 0) > 0 || (b?.compression?.zstdBytes ?? 0) > 0;
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><span class="format-badge" style="background:${color.bg}">${a.format}</span></td>
-                <td>${this.localizeSizeLabel(a.payloadSizeLabel)}</td>
-                <td>${a.serializeTimeMs.mean.toFixed(4)}</td>
-                <td>${b.serializeTimeMs.mean.toFixed(4)}</td>
-                <td>${diff(a.serializeTimeMs.mean, b.serializeTimeMs.mean)}</td>
-                <td>${a.roundTripTimeMs.mean.toFixed(4)}</td>
-                <td>${b.roundTripTimeMs.mean.toFixed(4)}</td>
-                <td>${diff(a.roundTripTimeMs.mean, b.roundTripTimeMs.mean)}</td>
-            `;
-            tbody.appendChild(row);
+            const rows = [
+                {
+                    metric: 'Serialize mean (ms)',
+                    a: a?.serializeTimeMs?.mean,
+                    b: b?.serializeTimeMs?.mean,
+                    fmt: (v) => v.toFixed(4),
+                },
+                {
+                    metric: 'Deserialize mean (ms)',
+                    a: a?.deserializeTimeMs?.mean,
+                    b: b?.deserializeTimeMs?.mean,
+                    fmt: (v) => v.toFixed(4),
+                },
+                {
+                    metric: 'Round-Trip mean (ms)',
+                    a: a?.roundTripTimeMs?.mean,
+                    b: b?.roundTripTimeMs?.mean,
+                    fmt: (v) => v.toFixed(4),
+                },
+                {
+                    metric: 'Payload size (bytes)',
+                    a: a?.serializedSizeBytes,
+                    b: b?.serializedSizeBytes,
+                    fmt: (v) => v.toLocaleString(),
+                },
+                {
+                    metric: 'Memory peak (bytes)',
+                    a: a?.memoryUsage?.totalPeakBytes,
+                    b: b?.memoryUsage?.totalPeakBytes,
+                    fmt: (v) => v.toLocaleString(),
+                },
+                {
+                    metric: 'Compression Gzip (bytes)',
+                    a: a?.compression?.gzipBytes,
+                    b: b?.compression?.gzipBytes,
+                    fmt: (v) => v.toLocaleString(),
+                },
+                {
+                    metric: 'Compression Gzip ratio (%)',
+                    a: Number.isFinite(a?.compression?.gzipRatio) ? a.compression.gzipRatio * 100 : null,
+                    b: Number.isFinite(b?.compression?.gzipRatio) ? b.compression.gzipRatio * 100 : null,
+                    fmt: (v) => `${v.toFixed(1)}%`,
+                },
+                {
+                    metric: 'Throughput serialize (msg/s)',
+                    a: a?.throughput?.serializeMsgPerSec,
+                    b: b?.throughput?.serializeMsgPerSec,
+                    fmt: (v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 }),
+                },
+                {
+                    metric: 'Throughput deserialize (msg/s)',
+                    a: a?.throughput?.deserializeMsgPerSec,
+                    b: b?.throughput?.deserializeMsgPerSec,
+                    fmt: (v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 }),
+                },
+                {
+                    metric: 'Throughput serialize (MB/s)',
+                    a: a?.throughput?.serializeMbPerSec,
+                    b: b?.throughput?.serializeMbPerSec,
+                    fmt: (v) => v.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+                },
+                {
+                    metric: 'Throughput deserialize (MB/s)',
+                    a: a?.throughput?.deserializeMbPerSec,
+                    b: b?.throughput?.deserializeMbPerSec,
+                    fmt: (v) => v.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+                },
+            ];
+
+            if (hasAnyZstd) {
+                rows.push(
+                    {
+                        metric: 'Compression Zstd (bytes)',
+                        a: a?.compression?.zstdBytes,
+                        b: b?.compression?.zstdBytes,
+                        fmt: (v) => v.toLocaleString(),
+                    },
+                    {
+                        metric: 'Compression Zstd ratio (%)',
+                        a: Number.isFinite(a?.compression?.zstdRatio) ? a.compression.zstdRatio * 100 : null,
+                        b: Number.isFinite(b?.compression?.zstdRatio) ? b.compression.zstdRatio * 100 : null,
+                        fmt: (v) => `${v.toFixed(1)}%`,
+                    }
+                );
+            }
+
+            return rows;
+        };
+
+        entries.forEach(item => {
+            const a = item.a;
+            const color = this.formatColors[item.format] || { bg: 'rgba(128,128,128,0.7)' };
+
+            metricRows(item).forEach(metric => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="format-badge" style="background:${color.bg}">${item.format}</span></td>
+                    <td>${this.localizeSizeLabel(item.payloadSizeLabel)}</td>
+                    <td>${metric.metric}</td>
+                    <td>${valueCell(metric.a, metric.fmt)}</td>
+                    <td>${valueCell(metric.b, metric.fmt)}</td>
+                    <td>${diffCell(metric.a, metric.b)}</td>
+                `;
+                tbody.appendChild(row);
+            });
         });
     },
 
@@ -1064,5 +1315,7 @@ const App = {
         }
         this.compareRunA = null;
         this.compareRunB = null;
+        this.compareData = null;
+        this.compareSelectedSize = '__all__';
     },
 };

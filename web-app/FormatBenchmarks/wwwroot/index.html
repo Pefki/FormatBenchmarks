@@ -391,6 +391,12 @@
                                 <i class="bi bi-x-lg"></i> <span id="close-compare-btn">Close</span>
                             </button>
                         </div>
+                        <div class="card-body border-top border-secondary py-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <label class="mb-0 fw-semibold" id="compare-payload-size-filter-label">Payload size:</label>
+                                <div id="compare-size-tabs" class="btn-group btn-group-sm" role="group" aria-label="Compare payload size filter"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Compare Charts -->
@@ -423,6 +429,69 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-payload-size-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-memory-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-gzip-bytes-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-gzip-ratio-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="compare-zstd-bytes-card" class="col-md-6 mb-3 d-none">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-zstd-bytes-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="compare-zstd-ratio-card" class="col-md-6 mb-3 d-none">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-zstd-ratio-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-throughput-deser-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-throughput-mb-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body chart-container">
+                                    <canvas id="compare-throughput-deser-mb-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Compare Table -->
@@ -436,12 +505,10 @@
                                     <tr>
                                         <th>Format</th>
                                         <th id="cmp-th-size">Size</th>
-                                        <th>Ser. Run A (ms)</th>
-                                        <th>Ser. Run B (ms)</th>
-                                        <th>Δ Ser.</th>
-                                        <th>RT Run A (ms)</th>
-                                        <th>RT Run B (ms)</th>
-                                        <th>Δ RT</th>
+                                        <th>Metric</th>
+                                        <th>Run A</th>
+                                        <th>Run B</th>
+                                        <th>Δ</th>
                                     </tr>
                                 </thead>
                                 <tbody id="compare-table-body"></tbody>
