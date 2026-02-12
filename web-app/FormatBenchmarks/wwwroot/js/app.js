@@ -22,6 +22,7 @@ const App = {
             warmupLabel: 'Warmup iterations',
             runtimeLanguageTitle: 'Runtime Language',
             compareRunsBtn: 'Compare Runs',
+            importResultsBtn: 'Import Results',
             selectAllBtn: 'Select All',
             selectNoneBtn: 'Select None',
             loadingRunning: '<i class="bi bi-hourglass-split"></i> Running benchmarks...',
@@ -63,6 +64,12 @@ const App = {
             noSizeSelected: 'Select at least one payload size.',
             benchmarkFailed: 'Benchmark execution failed',
             benchmarkError: 'Benchmark error: {message}',
+            importNoFileSelected: 'Select at least one JSON or CSV file to import.',
+            importUnsupportedFile: 'Unsupported file type: {name}. Use .json or .csv.',
+            importReadFailed: 'Failed to read import file: {name}',
+            importParseFailed: 'Failed to parse file: {name}',
+            importNoResults: 'No benchmark results found in file: {name}',
+            importAddedRuns: 'Imported {count} run(s).',
             platform: 'Platform',
             cpu: 'CPU',
             cores: 'Cores',
@@ -105,6 +112,7 @@ const App = {
             warmupLabel: 'Warmup iteraties',
             runtimeLanguageTitle: 'Taal / Runtime',
             compareRunsBtn: 'Vergelijk Runs',
+            importResultsBtn: 'Resultaten Importeren',
             selectAllBtn: 'Alles selecteren',
             selectNoneBtn: 'Niets selecteren',
             loadingRunning: '<i class="bi bi-hourglass-split"></i> Benchmarks worden uitgevoerd...',
@@ -146,6 +154,12 @@ const App = {
             noSizeSelected: 'Selecteer minimaal één payload grootte.',
             benchmarkFailed: 'Benchmark uitvoering mislukt',
             benchmarkError: 'Benchmark fout: {message}',
+            importNoFileSelected: 'Selecteer minimaal één JSON- of CSV-bestand om te importeren.',
+            importUnsupportedFile: 'Niet-ondersteund bestandstype: {name}. Gebruik .json of .csv.',
+            importReadFailed: 'Kon importbestand niet lezen: {name}',
+            importParseFailed: 'Kon bestand niet verwerken: {name}',
+            importNoResults: 'Geen benchmarkresultaten gevonden in bestand: {name}',
+            importAddedRuns: '{count} run(s) geïmporteerd.',
             platform: 'Platform',
             cpu: 'CPU',
             cores: 'Cores',
@@ -204,6 +218,8 @@ const App = {
     init() {
         document.getElementById('run-btn').addEventListener('click', () => this.runBenchmark());
         document.getElementById('compare-btn')?.addEventListener('click', () => this.openCompareModal());
+        document.getElementById('import-btn')?.addEventListener('click', () => this.openImportDialog());
+        document.getElementById('import-file-input')?.addEventListener('change', (event) => this.handleImportFiles(event));
         document.getElementById('ui-language')?.addEventListener('change', (e) => {
             this.setUiLanguage(e.target.value);
         });
@@ -258,6 +274,7 @@ const App = {
             'warmup-label': 'warmupLabel',
             'runtime-language-title': 'runtimeLanguageTitle',
             'compare-runs-btn': 'compareRunsBtn',
+            'import-results-btn': 'importResultsBtn',
             'select-all-btn': 'selectAllBtn',
             'select-none-btn': 'selectNoneBtn',
             'loading-info': 'loadingInfo',
@@ -390,11 +407,17 @@ const App = {
         // System information
         const sys = run.systemInfo || {};
         const lang = (sys.language || 'python').toLowerCase();
-        const langLabel = lang === 'go' ? 'Go' : 'Python';
-        const langBadgeClass = lang === 'go' ? 'bg-info' : 'bg-warning text-dark';
+        const langLabel = this.getLanguageLabel(lang);
+        const langBadgeClass = lang === 'go'
+            ? 'bg-info'
+            : lang === 'python'
+                ? 'bg-warning text-dark'
+                : 'bg-secondary';
         const versionLabel = lang === 'go'
             ? (sys.goVersion || 'N/A')
-            : (sys.pythonVersion || 'N/A');
+            : lang === 'python'
+                ? (sys.pythonVersion || 'N/A')
+                : 'N/A';
         document.getElementById('system-info').innerHTML = `
             <span><span class="badge ${langBadgeClass}">${langLabel}</span></span>
             <span><strong>${this.t('platform')}:</strong> ${sys.platform || 'N/A'}</span>
@@ -734,6 +757,290 @@ const App = {
 
     // ==================== Export ====================
 
+    openImportDialog() {
+        const input = document.getElementById('import-file-input');
+        if (!input) return;
+        input.value = '';
+        input.click();
+    },
+
+    async handleImportFiles(event) {
+        const input = event.target;
+        const files = Array.from(input?.files || []);
+
+        if (files.length === 0) {
+            this.showError(this.t('importNoFileSelected'));
+            return;
+        }
+
+        this.hideError();
+        let importedCount = 0;
+
+        for (const file of files) {
+            try {
+                const run = await this.parseImportFile(file);
+                if (!run?.results?.length) {
+                    this.showError(this.t('importNoResults', { name: file.name }));
+                    continue;
+                }
+
+                this.allRuns.push(run);
+                importedCount += 1;
+            } catch (error) {
+                const fallback = this.t('importParseFailed', { name: file.name });
+                this.showError(error?.message || fallback);
+            }
+        }
+
+        if (importedCount > 0) {
+            this.currentRun = this.allRuns[this.allRuns.length - 1];
+            this.displayResults(this.currentRun);
+            this.showSuccess(this.t('importAddedRuns', { count: importedCount }));
+        }
+    },
+
+    async parseImportFile(file) {
+        const extension = (file.name.split('.').pop() || '').toLowerCase();
+        if (extension !== 'json' && extension !== 'csv') {
+            throw new Error(this.t('importUnsupportedFile', { name: file.name }));
+        }
+
+        let text;
+        try {
+            text = await file.text();
+        } catch {
+            throw new Error(this.t('importReadFailed', { name: file.name }));
+        }
+
+        return extension === 'json'
+            ? this.parseImportedJson(text, file.name)
+            : this.parseImportedCsv(text, file.name);
+    },
+
+    parseImportedJson(text, fileName) {
+        let raw;
+        try {
+            raw = JSON.parse(text);
+        } catch {
+            throw new Error(this.t('importParseFailed', { name: fileName }));
+        }
+
+        const normalizedRun = this.normalizeImportedRun(raw);
+        if (!normalizedRun.results.length) {
+            throw new Error(this.t('importNoResults', { name: fileName }));
+        }
+
+        return normalizedRun;
+    },
+
+    parseImportedCsv(text, fileName) {
+        const lines = text
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean);
+
+        if (lines.length < 2) {
+            throw new Error(this.t('importNoResults', { name: fileName }));
+        }
+
+        const headers = lines[0].split(',').map(header => header.trim());
+        const index = Object.fromEntries(headers.map((header, i) => [header, i]));
+
+        const read = (values, key, fallback = '') => {
+            const idx = index[key];
+            if (idx === undefined) return fallback;
+            return (values[idx] ?? fallback).trim();
+        };
+        const toInt = (value) => {
+            const parsed = parseInt(value, 10);
+            return Number.isFinite(parsed) ? parsed : 0;
+        };
+        const toFloat = (value) => {
+            const parsed = parseFloat(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        };
+
+        const results = lines.slice(1).map(line => {
+            const values = line.split(',');
+            return {
+                format: read(values, 'Format'),
+                payloadSizeLabel: read(values, 'PayloadSize'),
+                iterations: toInt(read(values, 'Iterations')),
+                serializedSizeBytes: toInt(read(values, 'SerializedSizeBytes')),
+                serializeTimeMs: {
+                    mean: toFloat(read(values, 'SerializeMeanMs')),
+                    median: toFloat(read(values, 'SerializeMedianMs')),
+                    min: toFloat(read(values, 'SerializeMinMs')),
+                    max: toFloat(read(values, 'SerializeMaxMs')),
+                    stdDev: toFloat(read(values, 'SerializeStdDevMs')),
+                    p95: toFloat(read(values, 'SerializeP95Ms')),
+                    p99: toFloat(read(values, 'SerializeP99Ms')),
+                },
+                deserializeTimeMs: {
+                    mean: toFloat(read(values, 'DeserializeMeanMs')),
+                    median: toFloat(read(values, 'DeserializeMedianMs')),
+                    min: toFloat(read(values, 'DeserializeMinMs')),
+                    max: toFloat(read(values, 'DeserializeMaxMs')),
+                    stdDev: toFloat(read(values, 'DeserializeStdDevMs')),
+                    p95: toFloat(read(values, 'DeserializeP95Ms')),
+                    p99: toFloat(read(values, 'DeserializeP99Ms')),
+                },
+                roundTripTimeMs: {
+                    mean: toFloat(read(values, 'RoundTripMeanMs')),
+                    median: toFloat(read(values, 'RoundTripMedianMs')),
+                    min: toFloat(read(values, 'RoundTripMinMs')),
+                    max: toFloat(read(values, 'RoundTripMaxMs')),
+                    stdDev: toFloat(read(values, 'RoundTripStdDevMs')),
+                    p95: toFloat(read(values, 'RoundTripP95Ms')),
+                    p99: toFloat(read(values, 'RoundTripP99Ms')),
+                },
+                memoryUsage: {
+                    serializePeakBytes: toInt(read(values, 'MemSerializePeakBytes')),
+                    deserializePeakBytes: toInt(read(values, 'MemDeserializePeakBytes')),
+                    totalPeakBytes: toInt(read(values, 'MemTotalPeakBytes')),
+                },
+                compression: {
+                    originalBytes: toInt(read(values, 'SerializedSizeBytes')),
+                    gzipBytes: toInt(read(values, 'GzipBytes')),
+                    gzipRatio: toFloat(read(values, 'GzipRatio')),
+                    zstdBytes: toInt(read(values, 'ZstdBytes')),
+                    zstdRatio: toFloat(read(values, 'ZstdRatio')),
+                },
+                throughput: {
+                    serializeMsgPerSec: toFloat(read(values, 'SerMsgPerSec')),
+                    deserializeMsgPerSec: toFloat(read(values, 'DeserMsgPerSec')),
+                    serializeMbPerSec: toFloat(read(values, 'SerMbPerSec')),
+                    deserializeMbPerSec: toFloat(read(values, 'DeserMbPerSec')),
+                },
+            };
+        }).filter(result => result.format && result.payloadSizeLabel);
+
+        if (!results.length) {
+            throw new Error(this.t('importNoResults', { name: fileName }));
+        }
+
+        return {
+            id: this.generateRunId(),
+            timestamp: new Date().toISOString(),
+            systemInfo: {
+                platform: 'Imported CSV',
+                pythonVersion: '',
+                goVersion: '',
+                language: 'imported',
+                processor: '',
+                machine: '',
+                cpuCount: 0,
+            },
+            config: {
+                iterations: results[0]?.iterations || 0,
+                warmup: 0,
+                formats: [...new Set(results.map(r => r.format.toLowerCase()))],
+                payloadSizes: [...new Set(results.map(r => r.payloadSizeLabel.toLowerCase()))],
+                skippedFormats: [],
+            },
+            results,
+            status: 'completed',
+            errorMessage: null,
+        };
+    },
+
+    normalizeImportedRun(raw) {
+        const source = raw?.runA && raw?.runB ? raw.runA : raw;
+
+        const read = (obj, ...keys) => {
+            for (const key of keys) {
+                if (obj && obj[key] !== undefined) return obj[key];
+            }
+            return undefined;
+        };
+
+        const normalizeStats = (stats = {}) => ({
+            mean: Number(read(stats, 'mean', 'Mean') ?? 0),
+            median: Number(read(stats, 'median', 'Median') ?? 0),
+            min: Number(read(stats, 'min', 'Min') ?? 0),
+            max: Number(read(stats, 'max', 'Max') ?? 0),
+            stdDev: Number(read(stats, 'stdDev', 'std_dev', 'StdDev') ?? 0),
+            p95: Number(read(stats, 'p95', 'P95') ?? 0),
+            p99: Number(read(stats, 'p99', 'P99') ?? 0),
+        });
+
+        const rawResults = read(source, 'results', 'Results') || [];
+        const results = rawResults.map(r => ({
+            format: String(read(r, 'format', 'Format') || ''),
+            payloadSizeLabel: String(read(r, 'payloadSizeLabel', 'payload_size_label', 'PayloadSizeLabel') || ''),
+            iterations: Number(read(r, 'iterations', 'Iterations') ?? 0),
+            serializedSizeBytes: Number(read(r, 'serializedSizeBytes', 'serialized_size_bytes', 'SerializedSizeBytes') ?? 0),
+            serializeTimeMs: normalizeStats(read(r, 'serializeTimeMs', 'serialize_time_ms', 'SerializeTimeMs') || {}),
+            deserializeTimeMs: normalizeStats(read(r, 'deserializeTimeMs', 'deserialize_time_ms', 'DeserializeTimeMs') || {}),
+            roundTripTimeMs: normalizeStats(read(r, 'roundTripTimeMs', 'round_trip_time_ms', 'RoundTripTimeMs') || {}),
+            memoryUsage: (() => {
+                const m = read(r, 'memoryUsage', 'memory_usage', 'MemoryUsage');
+                if (!m) return null;
+                return {
+                    serializePeakBytes: Number(read(m, 'serializePeakBytes', 'serialize_peak_bytes', 'SerializePeakBytes') ?? 0),
+                    deserializePeakBytes: Number(read(m, 'deserializePeakBytes', 'deserialize_peak_bytes', 'DeserializePeakBytes') ?? 0),
+                    totalPeakBytes: Number(read(m, 'totalPeakBytes', 'total_peak_bytes', 'TotalPeakBytes') ?? 0),
+                };
+            })(),
+            compression: (() => {
+                const c = read(r, 'compression', 'Compression');
+                if (!c) return null;
+                return {
+                    originalBytes: Number(read(c, 'originalBytes', 'original_bytes', 'OriginalBytes') ?? 0),
+                    gzipBytes: Number(read(c, 'gzipBytes', 'gzip_bytes', 'GzipBytes') ?? 0),
+                    gzipRatio: Number(read(c, 'gzipRatio', 'gzip_ratio', 'GzipRatio') ?? 0),
+                    zstdBytes: Number(read(c, 'zstdBytes', 'zstd_bytes', 'ZstdBytes') ?? 0),
+                    zstdRatio: Number(read(c, 'zstdRatio', 'zstd_ratio', 'ZstdRatio') ?? 0),
+                };
+            })(),
+            throughput: (() => {
+                const t = read(r, 'throughput', 'Throughput');
+                if (!t) return null;
+                return {
+                    serializeMsgPerSec: Number(read(t, 'serializeMsgPerSec', 'serialize_msg_per_sec', 'SerializeMsgPerSec') ?? 0),
+                    deserializeMsgPerSec: Number(read(t, 'deserializeMsgPerSec', 'deserialize_msg_per_sec', 'DeserializeMsgPerSec') ?? 0),
+                    serializeMbPerSec: Number(read(t, 'serializeMbPerSec', 'serialize_mb_per_sec', 'SerializeMbPerSec') ?? 0),
+                    deserializeMbPerSec: Number(read(t, 'deserializeMbPerSec', 'deserialize_mb_per_sec', 'DeserializeMbPerSec') ?? 0),
+                };
+            })(),
+        })).filter(result => result.format && result.payloadSizeLabel);
+
+        const config = read(source, 'config', 'Config') || {};
+        const systemInfo = read(source, 'systemInfo', 'system_info', 'SystemInfo') || {};
+
+        return {
+            id: String(read(source, 'id', 'Id') || this.generateRunId()),
+            timestamp: String(read(source, 'timestamp', 'Timestamp') || new Date().toISOString()),
+            systemInfo: {
+                platform: String(read(systemInfo, 'platform', 'Platform') || 'Imported JSON'),
+                pythonVersion: String(read(systemInfo, 'pythonVersion', 'python_version', 'PythonVersion') || ''),
+                goVersion: String(read(systemInfo, 'goVersion', 'go_version', 'GoVersion') || ''),
+                language: String(read(systemInfo, 'language', 'Language') || 'imported').toLowerCase(),
+                processor: String(read(systemInfo, 'processor', 'Processor') || ''),
+                machine: String(read(systemInfo, 'machine', 'Machine') || ''),
+                cpuCount: Number(read(systemInfo, 'cpuCount', 'cpu_count', 'CpuCount') || 0),
+            },
+            config: {
+                iterations: Number(read(config, 'iterations', 'Iterations') || 0),
+                warmup: Number(read(config, 'warmup', 'Warmup') || 0),
+                formats: read(config, 'formats', 'Formats') || [...new Set(results.map(r => r.format.toLowerCase()))],
+                payloadSizes: read(config, 'payloadSizes', 'payload_sizes', 'PayloadSizes') || [...new Set(results.map(r => r.payloadSizeLabel.toLowerCase()))],
+                skippedFormats: read(config, 'skippedFormats', 'skipped_formats', 'SkippedFormats') || [],
+            },
+            results,
+            status: 'completed',
+            errorMessage: null,
+        };
+    },
+
+    generateRunId() {
+        if (globalThis.crypto?.randomUUID) {
+            return globalThis.crypto.randomUUID();
+        }
+
+        return `import-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    },
+
     exportJSON() {
         if (!this.currentRun) {
             this.showError(this.t('noResultsExport'));
@@ -790,10 +1097,11 @@ const App = {
             const uniqueFormats = [...new Set(formats)];
             const statusClass = run.status === 'completed' ? 'completed' : 'failed';
             const lang = (run.systemInfo?.language || 'python').toLowerCase();
-            const langLabel = lang === 'go' ? 'Go' : 'Python';
             const langBadge = lang === 'go'
                 ? '<span class="badge bg-info me-1">Go</span>'
-                : '<span class="badge bg-warning text-dark me-1">Python</span>';
+                : lang === 'python'
+                    ? '<span class="badge bg-warning text-dark me-1">Python</span>'
+                    : '<span class="badge bg-secondary me-1">Imported</span>';
 
             return `
                 <div class="run-history-item d-flex justify-content-between align-items-center"
@@ -833,10 +1141,21 @@ const App = {
 
     showError(msg) {
         const el = document.getElementById('error-alert');
+        el.classList.remove('alert-success');
+        el.classList.add('alert-danger');
         document.getElementById('error-message').textContent = msg;
         el.classList.remove('d-none');
         // Auto-hide after 10 seconds
         setTimeout(() => el.classList.add('d-none'), 10000);
+    },
+
+    showSuccess(msg) {
+        const el = document.getElementById('error-alert');
+        el.classList.remove('alert-danger');
+        el.classList.add('alert-success');
+        document.getElementById('error-message').textContent = msg;
+        el.classList.remove('d-none');
+        setTimeout(() => el.classList.add('d-none'), 6000);
     },
 
     hideError() {
@@ -863,6 +1182,13 @@ const App = {
         return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
     },
 
+    getLanguageLabel(language) {
+        const lang = (language || '').toLowerCase();
+        if (lang === 'go') return 'Go';
+        if (lang === 'python') return 'Python';
+        return 'Imported';
+    },
+
     // ==================== Run Comparison ====================
 
     openCompareModal() {
@@ -881,7 +1207,7 @@ const App = {
             const time = new Date(run.timestamp).toLocaleTimeString(locale);
             const formats = [...new Set(run.results.map(r => r.format))];
             const lang = (run.systemInfo?.language || 'python').toLowerCase();
-            const langLabel = lang === 'go' ? 'Go' : 'Python';
+            const langLabel = this.getLanguageLabel(lang);
             return `<option value="${i}">${this.t('runLabel')} #${i + 1} [${langLabel}] — ${time} (${formats.length} ${this.t('formats')})</option>`;
         }).join('');
 
@@ -1051,7 +1377,7 @@ const App = {
     },
 
     getRunLanguage(run) {
-        return (run?.systemInfo?.language || 'python').toLowerCase();
+        return (run?.systemInfo?.language || 'unknown').toLowerCase();
     },
 
     buildComparisonData(runA, runB) {
