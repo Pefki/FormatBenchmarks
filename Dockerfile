@@ -61,6 +61,7 @@ RUN CGO_ENABLED=0 go build -o /app/benchmark .
 # ---- Stage 3: Build Rust benchmarks ----
 FROM rust:bookworm AS build-rust
 WORKDIR /src/rust-benchmarks
+ARG FLATBUFFERS_VERSION=24.3.25
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -68,10 +69,16 @@ RUN apt-get update && \
         pkg-config \
         cmake \
         clang \
+        git \
         capnproto \
-        flatbuffers-compiler \
         libzstd-dev && \
     rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch "v${FLATBUFFERS_VERSION}" https://github.com/google/flatbuffers.git /tmp/flatbuffers && \
+    cmake -S /tmp/flatbuffers -B /tmp/flatbuffers/build -DCMAKE_BUILD_TYPE=Release -DFLATBUFFERS_BUILD_TESTS=OFF && \
+    cmake --build /tmp/flatbuffers/build --target flatc -j"$(nproc)" && \
+    install -m 755 /tmp/flatbuffers/build/flatc /usr/local/bin/flatc && \
+    rm -rf /tmp/flatbuffers
 
 # Copy Cargo metadata first for dependency caching
 COPY rust-benchmarks/Cargo.toml ./
@@ -81,7 +88,7 @@ RUN cargo fetch
 
 # Copy full Rust source and build release binary
 COPY rust-benchmarks/ ./
-RUN cargo build --release --locked
+RUN cargo build --release
 
 # ---- Stage 4: Runtime image ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
