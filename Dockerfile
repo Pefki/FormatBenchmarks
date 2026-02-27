@@ -76,6 +76,7 @@ RUN apt-get update && \
 # Copy Cargo metadata first for dependency caching
 COPY rust-benchmarks/Cargo.toml ./
 COPY rust-benchmarks/Cargo.lock ./
+COPY rust-benchmarks/src/main.rs ./src/main.rs
 RUN cargo fetch
 
 # Copy full Rust source and build release binary
