@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using FormatBenchmarks.Models;
 
 namespace FormatBenchmarks.Services;
@@ -149,6 +150,7 @@ public class BenchmarkService
         var resultsDir = Path.Combine(rustDir, "results");
         Directory.CreateDirectory(resultsDir);
         var outputPath = Path.Combine(resultsDir, $"run_{run.Id}.json");
+        var processStartTime = DateTime.UtcNow;
 
         _logger.LogInformation("Start Rust benchmark: {Id}", run.Id);
 
@@ -162,15 +164,15 @@ public class BenchmarkService
             CreateNoWindow = true,
         };
 
-        psi.ArgumentList.Add("-iterations");
+        psi.ArgumentList.Add("--iterations");
         psi.ArgumentList.Add(request.Iterations.ToString());
-        psi.ArgumentList.Add("-warmup");
+        psi.ArgumentList.Add("--warmup");
         psi.ArgumentList.Add(request.Warmup.ToString());
-        psi.ArgumentList.Add("-formats");
+        psi.ArgumentList.Add("--formats");
         psi.ArgumentList.Add(string.Join(",", request.Formats));
-        psi.ArgumentList.Add("-sizes");
+        psi.ArgumentList.Add("--sizes");
         psi.ArgumentList.Add(string.Join(",", request.Sizes));
-        psi.ArgumentList.Add("-output");
+        psi.ArgumentList.Add("--output");
         psi.ArgumentList.Add(outputPath);
 
         _logger.LogInformation("Command: {Rust} {Args}",
@@ -192,9 +194,24 @@ public class BenchmarkService
             throw new InvalidOperationException($"Rust exit code: {process.ExitCode}\n{stderr}");
         }
 
-        if (File.Exists(outputPath))
+        var resolvedOutputPath = ResolveRustOutputPath(
+            expectedOutputPath: outputPath,
+            rustDir: rustDir,
+            stdout: stdout,
+            processStartTime: processStartTime);
+
+        if (resolvedOutputPath != null)
         {
-            var json = await File.ReadAllTextAsync(outputPath);
+            if (!string.Equals(resolvedOutputPath, outputPath, StringComparison.Ordinal))
+            {
+                _logger.LogWarning(
+                    "Rust run {RunId}: expected output at {ExpectedPath} but found output at {ResolvedPath}",
+                    run.Id,
+                    outputPath,
+                    resolvedOutputPath);
+            }
+
+            var json = await File.ReadAllTextAsync(resolvedOutputPath);
             var options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
@@ -237,8 +254,98 @@ public class BenchmarkService
         }
         else
         {
-            throw new InvalidOperationException($"Rust output file not found: {outputPath}");
+            throw new InvalidOperationException(
+                $"Rust output file not found. Expected path: {outputPath}. " +
+                $"Checked fallback paths under {Path.Combine(rustDir, "results")} and Rust stdout hints. " +
+                $"Rust stdout tail: {TailForLog(stdout)} | Rust stderr tail: {TailForLog(stderr)}");
         }
+    }
+
+    private static string? ResolveRustOutputPath(
+        string expectedOutputPath,
+        string rustDir,
+        string stdout,
+        DateTime processStartTime)
+    {
+        if (File.Exists(expectedOutputPath))
+        {
+            return expectedOutputPath;
+        }
+
+        var stdoutPath = TryExtractRustOutputPathFromStdout(stdout, rustDir);
+        if (stdoutPath != null && File.Exists(stdoutPath))
+        {
+            return stdoutPath;
+        }
+
+        var candidates = new[]
+        {
+            Path.Combine(rustDir, "results", "benchmark_results.json"),
+            Path.Combine(rustDir, "benchmark_results.json"),
+            Path.Combine(rustDir, "results", $"run_{Path.GetFileNameWithoutExtension(expectedOutputPath).Replace("run_", string.Empty)}.json"),
+        };
+
+        foreach (var candidate in candidates.Distinct(StringComparer.Ordinal))
+        {
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        var resultsDir = Path.Combine(rustDir, "results");
+        if (!Directory.Exists(resultsDir))
+        {
+            return null;
+        }
+
+        var mostRecent = new DirectoryInfo(resultsDir)
+            .EnumerateFiles("*.json", SearchOption.TopDirectoryOnly)
+            .Where(file => file.LastWriteTimeUtc >= processStartTime.AddSeconds(-2))
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        return mostRecent?.FullName;
+    }
+
+    private static string? TryExtractRustOutputPathFromStdout(string stdout, string rustDir)
+    {
+        if (string.IsNullOrWhiteSpace(stdout))
+        {
+            return null;
+        }
+
+        var match = Regex.Match(
+            stdout,
+            @"Results written to:\s*(.+)",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var rawPath = match.Groups[1].Value.Trim();
+        if (string.IsNullOrEmpty(rawPath))
+        {
+            return null;
+        }
+
+        return Path.IsPathRooted(rawPath)
+            ? rawPath
+            : Path.GetFullPath(Path.Combine(rustDir, rawPath));
+    }
+
+    private static string TailForLog(string value, int maxChars = 600)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return "<empty>";
+        }
+
+        return value.Length <= maxChars
+            ? value
+            : value[^maxChars..];
     }
 
     /// <summary>
