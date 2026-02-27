@@ -59,7 +59,7 @@ RUN mkdir -p schemas/protobuf schemas/capnp schemas/flatbuf && \
 RUN CGO_ENABLED=0 go build -o /app/benchmark .
 
 # ---- Stage 3: Build Rust benchmarks ----
-FROM rust:slim AS build-rust
+FROM rust:bookworm AS build-rust
 WORKDIR /src/rust-benchmarks
 
 RUN apt-get update && \
