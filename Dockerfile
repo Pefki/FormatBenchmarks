@@ -117,7 +117,7 @@ RUN apt-get update && \
         python3-dev \
         python3-venv \
         python3-pip \
-        openjdk-21-jre-headless \
+        default-jre-headless \
         capnproto \
         libcapnp-dev \
         g++ && \
