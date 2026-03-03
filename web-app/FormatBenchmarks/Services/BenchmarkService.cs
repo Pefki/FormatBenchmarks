@@ -19,6 +19,8 @@ public class BenchmarkService
     private readonly string _scriptPath;
     private readonly string _goPath;
     private readonly string _rustPath;
+    private readonly string _javaPath;
+    private readonly string _javaJarPath;
 
     public BenchmarkService(
         ILogger<BenchmarkService> logger,
@@ -75,10 +77,33 @@ public class BenchmarkService
                 Path.Combine(env.ContentRootPath, "..", "..", "rust-benchmarks", "target", "release", "benchmark"));
         }
 
+        var configuredJavaPath = configuration.GetValue<string>("Java:Path");
+        _javaPath = !string.IsNullOrWhiteSpace(configuredJavaPath) ? configuredJavaPath : "java";
+
+        var configuredJavaJarPath = configuration.GetValue<string>("Java:JarPath");
+        if (!string.IsNullOrWhiteSpace(configuredJavaJarPath))
+        {
+            _javaJarPath = Path.GetFullPath(configuredJavaJarPath);
+        }
+        else
+        {
+            var javaJarCandidates = new[]
+            {
+                Path.GetFullPath(Path.Combine(env.ContentRootPath, "..", "..", "java-benchmarks", "target", "benchmark.jar")),
+                Path.GetFullPath(Path.Combine(env.ContentRootPath, "..", "java-benchmarks", "benchmark.jar")),
+                "/app/java-benchmarks/benchmark.jar",
+            };
+
+            _javaJarPath = javaJarCandidates.FirstOrDefault(File.Exists)
+                ?? javaJarCandidates[0];
+        }
+
         _logger.LogInformation("Python path: {PythonPath}", _pythonPath);
         _logger.LogInformation("Script path: {ScriptPath}", _scriptPath);
         _logger.LogInformation("Go binary path: {GoPath}", _goPath);
         _logger.LogInformation("Rust binary path: {RustPath}", _rustPath);
+        _logger.LogInformation("Java path: {JavaPath}", _javaPath);
+        _logger.LogInformation("Java jar path: {JavaJarPath}", _javaJarPath);
     }
 
     /// <summary>
@@ -115,6 +140,10 @@ public class BenchmarkService
             {
                 await RunRustBenchmarkAsync(run, request);
             }
+            else if (language == "java")
+            {
+                await RunJavaBenchmarkAsync(run, request);
+            }
             else
             {
                 await RunPythonBenchmarkAsync(run, request);
@@ -133,6 +162,94 @@ public class BenchmarkService
         }
 
         return run;
+    }
+
+    /// <summary>
+    /// Run benchmark via Java jar.
+    /// </summary>
+    private async Task RunJavaBenchmarkAsync(BenchmarkRun run, RunBenchmarkRequest request)
+    {
+        if (!File.Exists(_javaJarPath))
+        {
+            throw new InvalidOperationException(
+                $"Java benchmark jar not found: {_javaJarPath}. " +
+                "For local runs, build it with 'mvn -f java-benchmarks/pom.xml package'. " +
+                "For container runs, rebuild the image so /app/java-benchmarks/benchmark.jar is included.");
+        }
+
+        var javaDir = Path.GetDirectoryName(_javaJarPath) ?? _javaJarPath;
+        var resultsDir = Path.Combine(javaDir, "results");
+        Directory.CreateDirectory(resultsDir);
+        var outputPath = Path.Combine(resultsDir, $"run_{run.Id}.json");
+
+        _logger.LogInformation("Start Java benchmark: {Id}", run.Id);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = _javaPath,
+            WorkingDirectory = javaDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        psi.ArgumentList.Add("-jar");
+        psi.ArgumentList.Add(_javaJarPath);
+        psi.ArgumentList.Add("--iterations");
+        psi.ArgumentList.Add(request.Iterations.ToString());
+        psi.ArgumentList.Add("--warmup");
+        psi.ArgumentList.Add(request.Warmup.ToString());
+        psi.ArgumentList.Add("--formats");
+        psi.ArgumentList.Add(string.Join(",", request.Formats));
+        psi.ArgumentList.Add("--sizes");
+        psi.ArgumentList.Add(string.Join(",", request.Sizes));
+        psi.ArgumentList.Add("--output");
+        psi.ArgumentList.Add(outputPath);
+
+        _logger.LogInformation("Command: {Java} {Args}",
+            _javaPath, string.Join(" ", psi.ArgumentList));
+
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException("Could not start Java process");
+
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        _logger.LogInformation("Java stdout:\n{Output}", stdout);
+        if (!string.IsNullOrEmpty(stderr))
+            _logger.LogWarning("Java stderr:\n{Error}", stderr);
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Java exit code: {process.ExitCode}\n{stderr}");
+        }
+
+        if (File.Exists(outputPath))
+        {
+            var json = await File.ReadAllTextAsync(outputPath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            };
+
+            var resultData = JsonSerializer.Deserialize<PythonOutput>(json, options);
+
+            if (resultData != null)
+            {
+                run.SystemInfo = resultData.SystemInfo ?? new SystemInfo();
+                run.Config = resultData.Config ?? run.Config;
+                run.Results = resultData.Results ?? new List<BenchmarkResult>();
+                run.Timestamp = DateTime.TryParse(resultData.Timestamp, out var ts)
+                    ? ts : DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException($"Java output file not found: {outputPath}");
+        }
     }
 
     /// <summary>

@@ -412,6 +412,8 @@ const App = {
             ? 'bg-info'
             : lang === 'rust'
                 ? 'bg-danger'
+                : lang === 'java'
+                    ? 'bg-success'
             : lang === 'python'
                 ? 'bg-warning text-dark'
                 : 'bg-secondary';
@@ -419,6 +421,8 @@ const App = {
             ? (sys.rustVersion || 'N/A')
             : lang === 'go'
             ? (sys.goVersion || 'N/A')
+            : lang === 'java'
+                ? (sys.javaVersion || 'N/A')
             : lang === 'python'
                 ? (sys.pythonVersion || 'N/A')
                 : 'N/A';
@@ -931,6 +935,7 @@ const App = {
                 pythonVersion: '',
                 goVersion: '',
                 rustVersion: '',
+                javaVersion: '',
                 language: 'imported',
                 processor: '',
                 machine: '',
@@ -1021,6 +1026,7 @@ const App = {
                 pythonVersion: String(read(systemInfo, 'pythonVersion', 'python_version', 'PythonVersion') || ''),
                 goVersion: String(read(systemInfo, 'goVersion', 'go_version', 'GoVersion') || ''),
                 rustVersion: String(read(systemInfo, 'rustVersion', 'rust_version', 'RustVersion') || ''),
+                javaVersion: String(read(systemInfo, 'javaVersion', 'java_version', 'JavaVersion') || ''),
                 language: String(read(systemInfo, 'language', 'Language') || 'imported').toLowerCase(),
                 processor: String(read(systemInfo, 'processor', 'Processor') || ''),
                 machine: String(read(systemInfo, 'machine', 'Machine') || ''),
@@ -1107,6 +1113,8 @@ const App = {
                 ? '<span class="badge bg-info me-1">Go</span>'
                 : lang === 'rust'
                     ? '<span class="badge bg-danger me-1">Rust</span>'
+                : lang === 'java'
+                    ? '<span class="badge bg-success me-1">Java</span>'
                 : lang === 'python'
                     ? '<span class="badge bg-warning text-dark me-1">Python</span>'
                     : '<span class="badge bg-secondary me-1">Imported</span>';
@@ -1194,6 +1202,7 @@ const App = {
         const lang = (language || '').toLowerCase();
         if (lang === 'rust') return 'Rust';
         if (lang === 'go') return 'Go';
+            if (lang === 'java') return 'Java';
         if (lang === 'python') return 'Python';
         return 'Imported';
     },

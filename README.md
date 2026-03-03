@@ -48,6 +48,10 @@ The C# ASP.NET Core web application provides a UI with charts and data export.
 
 ```
 format-benchmarks/
+├── java-benchmarks/            # Java benchmark suite
+│   ├── src/main/java/          # CLI entry point + benchmark engine
+│   ├── pom.xml
+│   └── target/                 # Built jar output
 ├── rust-benchmarks/            # Rust benchmark suite
 │   ├── src/main.rs             # CLI entry point
 │   ├── Cargo.toml
@@ -146,6 +150,7 @@ Open http://localhost:5000 in your browser. Configure the benchmark parameters a
 ## Languages & Technologies
 
 - **Python** — Benchmark execution, serialization/deserialization testing
+- **Java** — Benchmark execution, serialization/deserialization testing
 - **Rust** — Benchmark execution, serialization/deserialization testing
 - **C#** — ASP.NET Core web API, result management, data export
 - **JavaScript** — Frontend UI, Chart.js charts

@@ -95,7 +95,18 @@ RUN cargo fetch
 COPY rust-benchmarks/ ./
 RUN cargo build --release
 
-# ---- Stage 4: Runtime image ----
+# ---- Stage 4: Build Java benchmarks ----
+FROM maven:3.9-eclipse-temurin-21 AS build-java
+WORKDIR /src/java-benchmarks
+
+COPY java-benchmarks/pom.xml ./
+RUN mvn -B -q -DskipTests dependency:go-offline
+
+COPY java-benchmarks/ ./
+RUN mvn -B -DskipTests package && \
+    cp target/benchmark.jar /app/benchmark.jar
+
+# ---- Stage 5: Runtime image ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
@@ -106,6 +117,7 @@ RUN apt-get update && \
         python3-dev \
         python3-venv \
         python3-pip \
+        openjdk-21-jre-headless \
         capnproto \
         libcapnp-dev \
         g++ && \
@@ -132,6 +144,10 @@ RUN mkdir -p /app/go-benchmarks/results
 COPY --from=build-rust /src/rust-benchmarks/target/release/benchmark /app/rust-benchmarks/benchmark
 RUN mkdir -p /app/rust-benchmarks/results
 
+# Copy Java benchmark jar
+COPY --from=build-java /app/benchmark.jar /app/java-benchmarks/benchmark.jar
+RUN mkdir -p /app/java-benchmarks/results
+
 # Copy published .NET app
 COPY --from=build-dotnet /app/publish .
 
@@ -141,6 +157,8 @@ ENV Python__Path=/app/python-benchmarks/.venv/bin/python
 ENV Python__ScriptPath=/app/python-benchmarks
 ENV Go__BinaryPath=/app/go-benchmarks/benchmark
 ENV Rust__BinaryPath=/app/rust-benchmarks/benchmark
+ENV Java__Path=java
+ENV Java__JarPath=/app/java-benchmarks/benchmark.jar
 
 EXPOSE 5000
 

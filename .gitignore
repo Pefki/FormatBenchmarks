@@ -32,6 +32,17 @@ go-benchmarks/schemas/flatbuf/*.go
 rust-benchmarks/benchmark
 rust-benchmarks/target/
 
+# Java
+java-benchmarks/target/
+java-benchmarks/results/*.json
+java-benchmarks/dependency-reduced-pom.xml
+
+# Logs / local runtime leftovers
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # .NET
 web-app/**/bin/
 web-app/**/obj/
@@ -44,3 +55,5 @@ web-app/**/obj/
 *.swp
 *.swo
 *~
+.DS_Store
+Benchmark Workflow by Language.md
