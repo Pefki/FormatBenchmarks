@@ -4,6 +4,10 @@ Message Format Benchmarking — KdG The Lab 2025-2026 — Team 41 'netwerkt'
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+Live demo / test instance: [https://bench.pefki.xyz](https://bench.pefki.xyz)
+
+
+
 ## Overview
 
 A benchmark platform for comparing different (binary) message formats.
@@ -80,7 +84,6 @@ format-benchmarks/
 │       ├── Services/
 │       │   └── BenchmarkService.cs
 │       └── wwwroot/            # Frontend (HTML/CSS/JS + Chart.js)
-└── (Binary) Message Formats.md # Research document
 ```
 
 ## Requirements

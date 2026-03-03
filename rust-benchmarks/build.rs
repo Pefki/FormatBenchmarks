@@ -7,8 +7,23 @@ fn main() {
     println!("cargo:rerun-if-changed=schemas/message.capnp");
     println!("cargo:rerun-if-changed=schemas/message.fbs");
 
+    export_rust_version();
     compile_capnp();
     compile_flatbuffers();
+}
+
+fn export_rust_version() {
+    let version = Command::new("rustc")
+        .arg("--version")
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    println!("cargo:rustc-env=BENCHMARK_RUST_VERSION={version}");
 }
 
 fn compile_capnp() {

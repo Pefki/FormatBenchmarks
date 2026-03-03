@@ -1173,6 +1173,12 @@ fn get_system_info() -> SystemInfo {
 }
 
 fn rust_version() -> String {
+    if let Some(version) = option_env!("BENCHMARK_RUST_VERSION") {
+        if !version.is_empty() {
+            return version.to_string();
+        }
+    }
+
     match std::process::Command::new("rustc").arg("--version").output() {
         Ok(output) if output.status.success() => String::from_utf8(output.stdout)
             .map(|value| value.trim().to_string())
