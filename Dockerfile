@@ -103,7 +103,8 @@ COPY java-benchmarks/pom.xml ./
 RUN mvn -B -q -DskipTests dependency:go-offline
 
 COPY java-benchmarks/ ./
-RUN mvn -B -DskipTests package && \
+RUN mkdir -p /app && \
+    mvn -B -DskipTests package && \
     cp target/benchmark.jar /app/benchmark.jar
 
 # ---- Stage 5: Runtime image ----
