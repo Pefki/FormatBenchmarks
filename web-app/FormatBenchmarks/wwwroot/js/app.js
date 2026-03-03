@@ -406,7 +406,7 @@ const App = {
 
         // System information
         const sys = run.systemInfo || {};
-        const lang = (sys.language || 'python').toLowerCase();
+        const lang = this.normalizeLanguage(sys.language);
         const langLabel = this.getLanguageLabel(lang);
         const langBadgeClass = lang === 'go'
             ? 'bg-info'
@@ -930,6 +930,7 @@ const App = {
         return {
             id: this.generateRunId(),
             timestamp: new Date().toISOString(),
+            isImported: true,
             systemInfo: {
                 platform: 'Imported CSV',
                 pythonVersion: '',
@@ -1021,6 +1022,7 @@ const App = {
         return {
             id: String(read(source, 'id', 'Id') || this.generateRunId()),
             timestamp: String(read(source, 'timestamp', 'Timestamp') || new Date().toISOString()),
+            isImported: true,
             systemInfo: {
                 platform: String(read(systemInfo, 'platform', 'Platform') || 'Imported JSON'),
                 pythonVersion: String(read(systemInfo, 'pythonVersion', 'python_version', 'PythonVersion') || ''),
@@ -1108,8 +1110,11 @@ const App = {
             const formats = run.results.map(r => r.format);
             const uniqueFormats = [...new Set(formats)];
             const statusClass = run.status === 'completed' ? 'completed' : 'failed';
-            const lang = (run.systemInfo?.language || 'python').toLowerCase();
-            const langBadge = lang === 'go'
+            const lang = this.normalizeLanguage(run.systemInfo?.language);
+            const imported = this.isImportedRun(run);
+            const langBadge = imported
+                ? '<span class="badge bg-secondary me-1">Imported</span>'
+                : lang === 'go'
                 ? '<span class="badge bg-info me-1">Go</span>'
                 : lang === 'rust'
                     ? '<span class="badge bg-danger me-1">Rust</span>'
@@ -1117,7 +1122,7 @@ const App = {
                     ? '<span class="badge bg-success me-1">Java</span>'
                 : lang === 'python'
                     ? '<span class="badge bg-warning text-dark me-1">Python</span>'
-                    : '<span class="badge bg-secondary me-1">Imported</span>';
+                    : `<span class="badge bg-secondary me-1">${this.getLanguageLabel(lang)}</span>`;
 
             return `
                 <div class="run-history-item d-flex justify-content-between align-items-center"
@@ -1198,13 +1203,31 @@ const App = {
         return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
     },
 
+    normalizeLanguage(language) {
+        const raw = String(language ?? '').trim().toLowerCase();
+        if (!raw) return 'python';
+        if (raw === 'imported') return 'imported';
+        if (raw === 'golang' || raw.startsWith('go ')) return 'go';
+        if (raw.startsWith('go')) return 'go';
+        if (raw.startsWith('python')) return 'python';
+        if (raw.startsWith('rust')) return 'rust';
+        if (raw.startsWith('java') || raw.includes('openjdk') || raw.includes('jdk')) return 'java';
+        return raw;
+    },
+
+    isImportedRun(run) {
+        if (run?.isImported === true) return true;
+        return this.normalizeLanguage(run?.systemInfo?.language) === 'imported';
+    },
+
     getLanguageLabel(language) {
-        const lang = (language || '').toLowerCase();
+        const lang = this.normalizeLanguage(language);
         if (lang === 'rust') return 'Rust';
         if (lang === 'go') return 'Go';
-            if (lang === 'java') return 'Java';
+        if (lang === 'java') return 'Java';
         if (lang === 'python') return 'Python';
-        return 'Imported';
+        if (lang === 'imported') return 'Imported';
+        return this.capitalize(lang || 'Unknown');
     },
 
     // ==================== Run Comparison ====================
@@ -1224,7 +1247,7 @@ const App = {
             const locale = this.uiLanguage === 'nl' ? 'nl-NL' : 'en-US';
             const time = new Date(run.timestamp).toLocaleTimeString(locale);
             const formats = [...new Set(run.results.map(r => r.format))];
-            const lang = (run.systemInfo?.language || 'python').toLowerCase();
+            const lang = this.normalizeLanguage(run.systemInfo?.language);
             const langLabel = this.getLanguageLabel(lang);
             return `<option value="${i}">${this.t('runLabel')} #${i + 1} [${langLabel}] — ${time} (${formats.length} ${this.t('formats')})</option>`;
         }).join('');

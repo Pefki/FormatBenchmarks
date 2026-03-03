@@ -111,7 +111,7 @@ public class BenchmarkService
     /// </summary>
     public async Task<BenchmarkRun> RunBenchmarkAsync(RunBenchmarkRequest request)
     {
-        var language = (request.Language ?? "python").ToLowerInvariant();
+        var language = (request.Language ?? "python").Trim().ToLowerInvariant();
 
         var run = new BenchmarkRun
         {
