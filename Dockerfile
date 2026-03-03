@@ -59,7 +59,7 @@ RUN mkdir -p schemas/protobuf schemas/capnp schemas/flatbuf && \
 RUN CGO_ENABLED=0 go build -o /app/benchmark .
 
 # ---- Stage 3: Build Rust benchmarks ----
-FROM rust:bookworm AS build-rust
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-rust
 WORKDIR /src/rust-benchmarks
 ARG FLATBUFFERS_VERSION=24.3.25
 
@@ -69,10 +69,15 @@ RUN apt-get update && \
         pkg-config \
         cmake \
         clang \
+        curl \
+        ca-certificates \
         git \
         capnproto \
         libzstd-dev && \
     rm -rf /var/lib/apt/lists/*
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN git clone --depth 1 --branch "v${FLATBUFFERS_VERSION}" https://github.com/google/flatbuffers.git /tmp/flatbuffers && \
     cmake -S /tmp/flatbuffers -B /tmp/flatbuffers/build -DCMAKE_BUILD_TYPE=Release -DFLATBUFFERS_BUILD_TESTS=OFF && \
