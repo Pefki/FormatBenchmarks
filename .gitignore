@@ -11,6 +11,9 @@ build/
 .venv/
 venv/
 env/
+.env
+.env.*
+!.env.example
 
 # Generated protobuf files
 python-benchmarks/schemas/*_pb2.py

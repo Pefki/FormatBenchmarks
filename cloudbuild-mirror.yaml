@@ -1,0 +1,20 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: mirror-gitlab-to-artifact-registry
+    entrypoint: bash
+    secretEnv: ["GITLAB_PAT"]
+    args:
+      - -ceu
+      - |
+        echo "$$GITLAB_PAT" | docker login registry.gitlab.com -u oauth2 --password-stdin
+        docker pull registry.gitlab.com/kdg-ti/the-lab/teams-25-26/41_netwerkt/format-benchmarks:latest
+        docker tag registry.gitlab.com/kdg-ti/the-lab/teams-25-26/41_netwerkt/format-benchmarks:latest ${_AR_IMAGE}
+        docker push ${_AR_IMAGE}
+
+substitutions:
+  _AR_IMAGE: europe-west1-docker.pkg.dev/$PROJECT_ID/formatbench/format-benchmarks:latest
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/gitlab-pat/versions/latest
+      env: GITLAB_PAT
