@@ -191,6 +191,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Team
 
-**Team 41 'netwerkt'** — KdG The Lab 2025-2026
+**'Netwerkt'** — KdG The Lab 2026 — Sefkan Özmen, Tom Verschuren, Xander Geluykens
 
-[GitLab Repository](https://gitlab.com/kdg-ti/the-lab/teams-25-26/41_netwerkt)
+[Github Repository](https://github.com/Pefki/FormatBenchmarks)
