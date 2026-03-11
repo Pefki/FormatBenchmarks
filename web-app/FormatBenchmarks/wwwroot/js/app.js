@@ -42,12 +42,13 @@ const App = {
             payloadSizeFilterLabel: 'Payload size:',
             resultsTableTitle: 'Results Table',
             thSize: 'Size',
-            thSerAvg: 'Ser. avg (ms)',
-            thDeserAvg: 'Deser. avg (ms)',
+            thNestingDepth: 'Nesting Depth',
+            thSerDeserAvg: 'Ser/Deser avg (ms)',
+            thSerDeserP95: 'Ser/Deser P95 (ms)',
             thRtAvg: 'Round-Trip avg (ms)',
             thMemPeak: 'Memory Peak',
             thGzipComp: 'Gzip Compression',
-            thThroughput: 'Throughput (msg/s)',
+            thThroughput: 'Throughput (ser/deser msg/s)',
             runHistoryTitle: 'Previous Runs',
             compareHeaderPrefix: 'Run Comparison:',
             closeCompareBtn: 'Close',
@@ -132,12 +133,13 @@ const App = {
             payloadSizeFilterLabel: 'Payload grootte:',
             resultsTableTitle: 'Resultaten Tabel',
             thSize: 'Grootte',
-            thSerAvg: 'Ser. gem. (ms)',
-            thDeserAvg: 'Deser. gem. (ms)',
+            thNestingDepth: 'Nestingdiepte',
+            thSerDeserAvg: 'Ser/Deser gem. (ms)',
+            thSerDeserP95: 'Ser/Deser P95 (ms)',
             thRtAvg: 'Round-Trip gem. (ms)',
             thMemPeak: 'Geheugen Piek',
             thGzipComp: 'Gzip Compressie',
-            thThroughput: 'Doorvoer (msg/s)',
+            thThroughput: 'Doorvoer (ser/deser msg/s)',
             runHistoryTitle: 'Vorige Runs',
             compareHeaderPrefix: 'Run Vergelijking:',
             closeCompareBtn: 'Sluiten',
@@ -293,8 +295,9 @@ const App = {
             'compare-payload-size-filter-label': 'payloadSizeFilterLabel',
             'results-table-title': 'resultsTableTitle',
             'th-size': 'thSize',
-            'th-ser-avg': 'thSerAvg',
-            'th-deser-avg': 'thDeserAvg',
+            'th-nesting-depth': 'thNestingDepth',
+            'th-serdeser-avg': 'thSerDeserAvg',
+            'th-serdeser-p95': 'thSerDeserP95',
             'th-rt-avg': 'thRtAvg',
             'th-mem-peak': 'thMemPeak',
             'th-gzip-comp': 'thGzipComp',
@@ -738,10 +741,27 @@ const App = {
             const comprDisplay = gzipBytes != null
                 ? `${this.formatBytes(gzipBytes)} (${(gzipRatio * 100).toFixed(0)}%)`
                 : 'N/A';
-            const throughput = r.throughput?.serializeMsgPerSec;
-            const tpDisplay = throughput != null
-                ? `${Math.round(throughput).toLocaleString()}`
-                : 'N/A';
+            const serThroughput = r.throughput?.serializeMsgPerSec;
+            const deserThroughput = r.throughput?.deserializeMsgPerSec;
+            const hasSerThroughput = serThroughput != null && Number.isFinite(Number(serThroughput));
+            const hasDeserThroughput = deserThroughput != null && Number.isFinite(Number(deserThroughput));
+            const formatThroughput = (value) =>
+                Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+            let tpDisplay = 'N/A';
+            if (hasSerThroughput && hasDeserThroughput) {
+                tpDisplay = `${formatThroughput(serThroughput)} / ${formatThroughput(deserThroughput)}`;
+            } else if (hasSerThroughput) {
+                tpDisplay = formatThroughput(serThroughput);
+            } else if (hasDeserThroughput) {
+                tpDisplay = formatThroughput(deserThroughput);
+            }
+            const hasNestingDepth = r.payloadNestingDepth != null && Number.isFinite(Number(r.payloadNestingDepth));
+            const nestingDepthDisplay = hasNestingDepth ? Number(r.payloadNestingDepth).toLocaleString() : 'N/A';
+            const serAvgDisplay = r.serializeTimeMs.mean.toFixed(4);
+            const deserAvgDisplay = r.deserializeTimeMs.mean.toFixed(4);
+            const serP95Display = r.serializeTimeMs.p95.toFixed(4);
+            const deserP95Display = r.deserializeTimeMs.p95.toFixed(4);
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
@@ -749,11 +769,10 @@ const App = {
                 </td>
                 <td>${this.localizeSizeLabel(r.payloadSizeLabel)}</td>
                 <td>${r.serializedSizeBytes.toLocaleString()}</td>
-                <td>${r.serializeTimeMs.mean.toFixed(4)}</td>
-                <td>${r.deserializeTimeMs.mean.toFixed(4)}</td>
+                <td>${nestingDepthDisplay}</td>
+                <td>${serAvgDisplay} / ${deserAvgDisplay}</td>
                 <td>${r.roundTripTimeMs.mean.toFixed(4)}</td>
-                <td>${r.serializeTimeMs.p95.toFixed(4)}</td>
-                <td>${r.deserializeTimeMs.p95.toFixed(4)}</td>
+                <td>${serP95Display} / ${deserP95Display}</td>
                 <td>${r.roundTripTimeMs.stdDev.toFixed(4)}</td>
                 <td>${memDisplay}</td>
                 <td>${comprDisplay}</td>
@@ -875,6 +894,7 @@ const App = {
                 payloadSizeLabel: read(values, 'PayloadSize'),
                 iterations: toInt(read(values, 'Iterations')),
                 serializedSizeBytes: toInt(read(values, 'SerializedSizeBytes')),
+                payloadNestingDepth: toInt(read(values, 'PayloadNestingDepth')),
                 serializeTimeMs: {
                     mean: toFloat(read(values, 'SerializeMeanMs')),
                     median: toFloat(read(values, 'SerializeMedianMs')),
@@ -981,6 +1001,7 @@ const App = {
             payloadSizeLabel: String(read(r, 'payloadSizeLabel', 'payload_size_label', 'PayloadSizeLabel') || ''),
             iterations: Number(read(r, 'iterations', 'Iterations') ?? 0),
             serializedSizeBytes: Number(read(r, 'serializedSizeBytes', 'serialized_size_bytes', 'SerializedSizeBytes') ?? 0),
+            payloadNestingDepth: Number(read(r, 'payloadNestingDepth', 'payload_nesting_depth', 'PayloadNestingDepth') ?? 0),
             serializeTimeMs: normalizeStats(read(r, 'serializeTimeMs', 'serialize_time_ms', 'SerializeTimeMs') || {}),
             deserializeTimeMs: normalizeStats(read(r, 'deserializeTimeMs', 'deserialize_time_ms', 'DeserializeTimeMs') || {}),
             roundTripTimeMs: normalizeStats(read(r, 'roundTripTimeMs', 'round_trip_time_ms', 'RoundTripTimeMs') || {}),

@@ -239,6 +239,7 @@ public final class Main {
         result.format = benchmark.formatName();
         result.iterations = iterations;
         result.serializedSizeBytes = payloadSize;
+        result.payloadNestingDepth = calculateNestingDepth(data);
         result.serializeTimeMs = calculateStats(serializeTimes);
         result.deserializeTimeMs = calculateStats(deserializeTimes);
         result.roundTripTimeMs = calculateStats(roundTrip);
@@ -246,6 +247,27 @@ public final class Main {
         result.compression = compression;
         result.throughput = throughput;
         return result;
+    }
+
+    // Scalars have depth 0. Containers (map/list) add one level plus deepest child.
+    private static int calculateNestingDepth(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            int maxChild = 0;
+            for (Object child : map.values()) {
+                maxChild = Math.max(maxChild, calculateNestingDepth(child));
+            }
+            return 1 + maxChild;
+        }
+
+        if (value instanceof List<?> list) {
+            int maxChild = 0;
+            for (Object child : list) {
+                maxChild = Math.max(maxChild, calculateNestingDepth(child));
+            }
+            return 1 + maxChild;
+        }
+
+        return 0;
     }
 
     private static MemoryUsage measureMemory(FormatBenchmark benchmark, Map<String, Object> data, byte[] serialized) {
@@ -966,6 +988,7 @@ public final class Main {
         public String format;
         public int iterations;
         public int serializedSizeBytes;
+        public int payloadNestingDepth;
         public TimingStats serializeTimeMs;
         public TimingStats deserializeTimeMs;
         public TimingStats roundTripTimeMs;

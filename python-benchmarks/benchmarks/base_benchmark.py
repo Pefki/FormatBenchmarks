@@ -106,6 +106,7 @@ class BaseBenchmark(ABC):
             "format": self.format_name,
             "iterations": iterations,
             "serialized_size_bytes": payload_size,
+            "payload_nesting_depth": self._calculate_nesting_depth(data),
             "serialize_time_ms": self._calculate_stats(serialize_times),
             "deserialize_time_ms": self._calculate_stats(deserialize_times),
             "round_trip_time_ms": self._calculate_stats(round_trip_times),
@@ -113,6 +114,26 @@ class BaseBenchmark(ABC):
             "compression": compression_stats,
             "throughput": throughput,
         }
+
+    @staticmethod
+    def _calculate_nesting_depth(value: Any) -> int:
+        """
+        Return maximum container nesting depth.
+
+        Scalars have depth 0, while dict/list/tuple containers add one level
+        plus the deepest child depth.
+        """
+        if isinstance(value, dict):
+            if not value:
+                return 1
+            return 1 + max(BaseBenchmark._calculate_nesting_depth(v) for v in value.values())
+
+        if isinstance(value, (list, tuple)):
+            if not value:
+                return 1
+            return 1 + max(BaseBenchmark._calculate_nesting_depth(v) for v in value)
+
+        return 0
 
     def _measure_memory(self, data: dict, serialized: bytes) -> dict:
         """

@@ -670,6 +670,7 @@ public class BenchmarkService
         // Header
         sb.AppendLine(string.Join(",",
             "Format", "PayloadSize", "Iterations", "SerializedSizeBytes",
+            "PayloadNestingDepth",
             "SerializeMeanMs", "SerializeMedianMs", "SerializeMinMs", "SerializeMaxMs",
             "SerializeStdDevMs", "SerializeP95Ms", "SerializeP99Ms",
             "DeserializeMeanMs", "DeserializeMedianMs", "DeserializeMinMs", "DeserializeMaxMs",
@@ -692,7 +693,7 @@ public class BenchmarkService
             var t = r.Throughput;
 
             sb.AppendLine(string.Join(",",
-                r.Format, r.PayloadSizeLabel, r.Iterations, r.SerializedSizeBytes,
+                r.Format, r.PayloadSizeLabel, r.Iterations, r.SerializedSizeBytes, r.PayloadNestingDepth,
                 s.Mean, s.Median, s.Min, s.Max, s.StdDev, s.P95, s.P99,
                 d.Mean, d.Median, d.Min, d.Max, d.StdDev, d.P95, d.P99,
                 rt.Mean, rt.Median, rt.Min, rt.Max, rt.StdDev, rt.P95, rt.P99,

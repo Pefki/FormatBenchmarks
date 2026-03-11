@@ -369,6 +369,7 @@ class TestBenchmarkRunner:
             "format",
             "iterations",
             "serialized_size_bytes",
+            "payload_nesting_depth",
             "serialize_time_ms",
             "deserialize_time_ms",
             "round_trip_time_ms",
@@ -410,3 +411,14 @@ class TestBenchmarkRunner:
         tp = result["throughput"]
         assert tp["serialize_msg_per_sec"] > 0
         assert tp["deserialize_msg_per_sec"] > 0
+
+    def test_run_benchmark_includes_nesting_depth(self):
+        """Nesting depth should be emitted and increase for more nested payloads."""
+        bench = JsonBenchmark()
+
+        small = bench.run_benchmark(generate_test_data("small"), iterations=5, warmup=2)
+        medium = bench.run_benchmark(generate_test_data("medium"), iterations=5, warmup=2)
+
+        assert isinstance(small["payload_nesting_depth"], int)
+        assert small["payload_nesting_depth"] > 0
+        assert medium["payload_nesting_depth"] >= small["payload_nesting_depth"]

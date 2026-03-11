@@ -280,6 +280,7 @@ struct BenchmarkResult {
     format: String,
     iterations: usize,
     serialized_size_bytes: usize,
+    payload_nesting_depth: usize,
     serialize_time_ms: TimingStats,
     deserialize_time_ms: TimingStats,
     round_trip_time_ms: TimingStats,
@@ -857,6 +858,7 @@ fn run_benchmark(
         format: benchmark.format_name().to_string(),
         iterations,
         serialized_size_bytes: payload_size,
+        payload_nesting_depth: calculate_payload_nesting_depth(data),
         serialize_time_ms: calculate_stats(&serialize_times),
         deserialize_time_ms: calculate_stats(&deserialize_times),
         round_trip_time_ms: calculate_stats(&round_trip_times),
@@ -865,6 +867,27 @@ fn run_benchmark(
         throughput,
         payload_size_label: String::new(),
     })
+}
+
+fn calculate_payload_nesting_depth(data: &BenchmarkMessageData) -> usize {
+    match serde_json::to_value(data) {
+        Ok(value) => calculate_nesting_depth_value(&value),
+        Err(_) => 0,
+    }
+}
+
+fn calculate_nesting_depth_value(value: &serde_json::Value) -> usize {
+    match value {
+        serde_json::Value::Object(map) => {
+            let max_child = map.values().map(calculate_nesting_depth_value).max().unwrap_or(0);
+            1 + max_child
+        }
+        serde_json::Value::Array(list) => {
+            let max_child = list.iter().map(calculate_nesting_depth_value).max().unwrap_or(0);
+            1 + max_child
+        }
+        _ => 0,
+    }
 }
 
 fn measure_memory(

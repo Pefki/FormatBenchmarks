@@ -52,6 +52,7 @@ public class BenchmarkResult
     public string PayloadSizeLabel { get; set; } = "";
     public int Iterations { get; set; }
     public int SerializedSizeBytes { get; set; }
+    public int PayloadNestingDepth { get; set; }
     public TimingStats SerializeTimeMs { get; set; } = new();
     public TimingStats DeserializeTimeMs { get; set; } = new();
     public TimingStats RoundTripTimeMs { get; set; } = new();

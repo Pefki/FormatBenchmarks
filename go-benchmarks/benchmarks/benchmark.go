@@ -59,6 +59,7 @@ type BenchmarkResult struct {
 	Format            string            `json:"format"`
 	Iterations        int               `json:"iterations"`
 	SerializedSize    int               `json:"serialized_size_bytes"`
+	PayloadNestingDepth int             `json:"payload_nesting_depth"`
 	SerializeTime     TimingStats       `json:"serialize_time_ms"`
 	DeserializeTime   TimingStats       `json:"deserialize_time_ms"`
 	RoundTripTime     TimingStats       `json:"round_trip_time_ms"`
@@ -131,6 +132,7 @@ func RunBenchmark(b FormatBenchmark, data map[string]interface{}, iterations, wa
 		Format:          b.FormatName(),
 		Iterations:      iterations,
 		SerializedSize:  payloadSize,
+		PayloadNestingDepth: calculateNestingDepth(data),
 		SerializeTime:   calculateStats(serializeTimes),
 		DeserializeTime: calculateStats(deserializeTimes),
 		RoundTripTime:   calculateStats(roundTripTimes),
@@ -138,6 +140,33 @@ func RunBenchmark(b FormatBenchmark, data map[string]interface{}, iterations, wa
 		Compression:     compression,
 		Throughput:      throughput,
 	}, nil
+}
+
+// calculateNestingDepth returns the maximum container nesting depth for a value.
+// Scalars have depth 0, while maps/slices add one level plus the deepest child.
+func calculateNestingDepth(value interface{}) int {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		maxChild := 0
+		for _, child := range v {
+			depth := calculateNestingDepth(child)
+			if depth > maxChild {
+				maxChild = depth
+			}
+		}
+		return 1 + maxChild
+	case []interface{}:
+		maxChild := 0
+		for _, child := range v {
+			depth := calculateNestingDepth(child)
+			if depth > maxChild {
+				maxChild = depth
+			}
+		}
+		return 1 + maxChild
+	default:
+		return 0
+	}
 }
 
 // measureMemory measures peak memory allocation during serialization/deserialization.
