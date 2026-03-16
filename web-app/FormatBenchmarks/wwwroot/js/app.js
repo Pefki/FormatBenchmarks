@@ -20,6 +20,8 @@ const App = {
             parametersTitle: 'Parameters',
             iterationsLabel: 'Iterations',
             warmupLabel: 'Warmup iterations',
+            nestingDepthLabel: 'Message nesting depth',
+            nestingDepthHelp: 'Used by Python payload generation.',
             runtimeLanguageTitle: 'Runtime Language',
             compareRunsBtn: 'Compare Runs',
             importResultsBtn: 'Import Results',
@@ -111,6 +113,8 @@ const App = {
             parametersTitle: 'Parameters',
             iterationsLabel: 'Iteraties',
             warmupLabel: 'Warmup iteraties',
+            nestingDepthLabel: 'Bericht-nestingdiepte',
+            nestingDepthHelp: 'Gebruikt door Python payload generatie.',
             runtimeLanguageTitle: 'Taal / Runtime',
             compareRunsBtn: 'Vergelijk Runs',
             importResultsBtn: 'Resultaten Importeren',
@@ -222,12 +226,14 @@ const App = {
         document.getElementById('compare-btn')?.addEventListener('click', () => this.openCompareModal());
         document.getElementById('import-btn')?.addEventListener('click', () => this.openImportDialog());
         document.getElementById('import-file-input')?.addEventListener('change', (event) => this.handleImportFiles(event));
+        document.getElementById('nesting-depth')?.addEventListener('input', () => this.updateNestingDepthValue());
         document.getElementById('ui-language')?.addEventListener('change', (e) => {
             this.setUiLanguage(e.target.value);
         });
 
         const savedLanguage = localStorage.getItem('uiLanguage') || 'en';
         this.setUiLanguage(savedLanguage);
+        this.updateNestingDepthValue();
 
         // Enter key in input fields also triggers benchmark
         document.querySelectorAll('#iterations, #warmup').forEach(input => {
@@ -274,6 +280,8 @@ const App = {
             'parameters-title': 'parametersTitle',
             'iterations-label': 'iterationsLabel',
             'warmup-label': 'warmupLabel',
+            'nesting-depth-label': 'nestingDepthLabel',
+            'nesting-depth-help': 'nestingDepthHelp',
             'runtime-language-title': 'runtimeLanguageTitle',
             'compare-runs-btn': 'compareRunsBtn',
             'import-results-btn': 'importResultsBtn',
@@ -337,12 +345,21 @@ const App = {
         return {
             iterations: parseInt(document.getElementById('iterations').value) || 1000,
             warmup: parseInt(document.getElementById('warmup').value) || 100,
+            nestingDepth: parseInt(document.getElementById('nesting-depth')?.value, 10) || 4,
             formats: Array.from(document.querySelectorAll('input[name="format"]:checked'))
                 .map(cb => cb.value),
             sizes: Array.from(document.querySelectorAll('input[name="size"]:checked'))
                 .map(cb => cb.value),
             language: document.querySelector('input[name="language"]:checked')?.value || 'python',
         };
+    },
+
+    updateNestingDepthValue() {
+        const slider = document.getElementById('nesting-depth');
+        const value = document.getElementById('nesting-depth-value');
+        if (slider && value) {
+            value.textContent = slider.value;
+        }
     },
 
     selectAllFormats(select) {

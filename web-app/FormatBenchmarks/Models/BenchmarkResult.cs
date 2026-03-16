@@ -38,6 +38,7 @@ public class BenchmarkConfig
 {
     public int Iterations { get; set; } = 1000;
     public int Warmup { get; set; } = 100;
+    public int? NestingDepth { get; set; }
     public List<string> Formats { get; set; } = new();
     public List<string> PayloadSizes { get; set; } = new();
     public List<string> SkippedFormats { get; set; } = new();
@@ -115,6 +116,7 @@ public class RunBenchmarkRequest
 {
     public int Iterations { get; set; } = 1000;
     public int Warmup { get; set; } = 100;
+    public int? NestingDepth { get; set; }
     public List<string> Formats { get; set; } = new() { "json", "bson", "protobuf", "capnproto", "msgpack", "avro", "flatbuffers" };
     public List<string> Sizes { get; set; } = new() { "small", "medium", "large" };
     public string Language { get; set; } = "python";

@@ -54,6 +54,10 @@ def main():
         "--warmup", type=int, default=100,
         help="Number of warmup iterations (default: 100)"
     )
+    parser.add_argument(
+        "--nesting-depth", type=int, default=None,
+        help="Target JSON container nesting depth for generated payloads (Python only)"
+    )
 
     args = parser.parse_args()
 
@@ -64,13 +68,17 @@ def main():
     print(f"  Warmup:     {args.warmup}")
     print(f"  Formats:    {', '.join(args.formats)}")
     print(f"  Sizes:      {', '.join(args.sizes)}")
+    if args.nesting_depth is not None:
+        if args.nesting_depth < 1:
+            raise ValueError("--nesting-depth must be >= 1")
+        print(f"  Nesting:    {args.nesting_depth}")
     print(f"  Output:     {args.output}")
     print("=" * 60)
 
     # Generate test data for each size
     test_data = {}
     for size in args.sizes:
-        test_data[size] = generate_test_data(size)
+        test_data[size] = generate_test_data(size, nesting_depth=args.nesting_depth)
         print(f"  Generated test data for '{size}'")
 
     # Run benchmarks

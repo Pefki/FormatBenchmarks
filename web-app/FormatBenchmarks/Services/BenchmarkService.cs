@@ -119,6 +119,7 @@ public class BenchmarkService
             {
                 Iterations = request.Iterations,
                 Warmup = request.Warmup,
+                NestingDepth = request.NestingDepth,
                 Formats = request.Formats,
                 PayloadSizes = request.Sizes,
             },
@@ -487,6 +488,11 @@ public class BenchmarkService
         args.AddRange(request.Formats);
         args.Add("--sizes");
         args.AddRange(request.Sizes);
+        if (request.NestingDepth is int depth)
+        {
+            args.Add("--nesting-depth");
+            args.Add(depth.ToString());
+        }
 
         _logger.LogInformation("Start Python benchmark: {Id}", run.Id);
         _logger.LogInformation("Command: {Python} {Args}",
