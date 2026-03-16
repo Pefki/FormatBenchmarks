@@ -6,6 +6,14 @@ Message Format Benchmarking — KdG The Lab 2025-2026 — Team 41 'netwerkt'
 
 Live demo / test instance: [https://bench.pefki.xyz](https://bench.pefki.xyz)
 
+## Fastest Start
+
+Run the published GHCR image and open http://localhost:5000:
+
+```bash
+docker run -d --name format-benchmarks -p 5000:5000 ghcr.io/pefki/formatbenchmarks:latest
+```
+
 ## Overview
 
 A benchmark platform for comparing binary and text message formats across multiple runtimes.
@@ -90,6 +98,24 @@ docker compose up -d
 
 This starts the prebuilt container on port `5000`.
 
+### Option C: Run prebuilt image from GHCR (recommended)
+
+Use the published container image directly:
+
+```bash
+docker pull ghcr.io/pefki/formatbenchmarks:latest
+docker run -d --name format-benchmarks -p 5000:5000 ghcr.io/pefki/formatbenchmarks:latest
+```
+
+Open http://localhost:5000.
+
+To stop/remove:
+
+```bash
+docker stop format-benchmarks
+docker rm format-benchmarks
+```
+
 ## Deploy Locally
 
 ### Deploy from source (local build)
@@ -116,6 +142,13 @@ docker stop format-benchmarks-local
 docker rm format-benchmarks-local
 ```
 
+### Deploy with published GHCR image
+
+```bash
+docker pull ghcr.io/pefki/formatbenchmarks:latest
+docker run -d --name format-benchmarks -p 5000:5000 ghcr.io/pefki/formatbenchmarks:latest
+```
+
 ## CLI Benchmark Usage
 
 All benchmark runners use similar flags:
@@ -125,6 +158,7 @@ All benchmark runners use similar flags:
 - `--formats`
 - `--sizes`
 - `--output`
+- `--nesting-depth` (Python runner)
 
 ### Python
 

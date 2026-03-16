@@ -28,6 +28,10 @@ body {
 .sticky-sidebar {
     position: sticky;
     top: 1rem;
+    width: 100%;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 /* ---- Format Indicators ---- */
@@ -202,6 +206,8 @@ body {
 
     .sticky-sidebar {
         position: static;
+        max-height: none;
+        overflow: visible;
     }
 
     .table {
