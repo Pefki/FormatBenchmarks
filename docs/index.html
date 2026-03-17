@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Format Benchmarks | Team Netwerkt</title>
+  <meta name="description" content="Format Benchmarks is a cross-language benchmark platform comparing text and binary message formats across Python, Go, Rust, and Java.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="hero">
+    <nav class="nav container">
+      <div class="brand">Format Benchmarks</div>
+      <div class="nav-links">
+        <a href="#project">Project</a>
+        <a href="#team">Team</a>
+        <a href="#video">Pitch Video</a>
+        <a href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="container hero-content">
+      <p class="kicker">KdG The Lab 2025-2026</p>
+      <h1>Benchmarking message formats across runtimes.</h1>
+      <p class="lead">
+        A practical platform to compare serialization speed, payload size, memory behavior, compression,
+        and throughput for JSON, BSON, Protobuf, Cap'n Proto, MessagePack, Avro, and FlatBuffers.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://bench.pefki.xyz" target="_blank" rel="noreferrer">Open Live Demo</a>
+        <a class="btn btn-ghost" href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">View Repository</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="project" class="section container">
+      <h2>Project Snapshot</h2>
+      <p class="section-intro">
+        Format Benchmarks combines independent benchmark runners and one web dashboard, making results easy to run,
+        compare, and present.
+      </p>
+
+      <div class="grid cards-3">
+        <article class="card">
+          <h3>Multi-language stack</h3>
+          <p>Python, Go, Rust, and Java benchmark backends orchestrated by an ASP.NET Core web app.</p>
+        </article>
+        <article class="card">
+          <h3>Metrics that matter</h3>
+          <p>Serialization and deserialization latency, round-trip, memory usage, compression ratio, and throughput.</p>
+        </article>
+        <article class="card">
+          <h3>Built for comparison</h3>
+          <p>Run history, side-by-side run comparison, charted output, plus JSON/CSV export support.</p>
+        </article>
+      </div>
+
+      <div class="tech-strip" aria-label="Technologies">
+        <span>Python</span>
+        <span>Go</span>
+        <span>Rust</span>
+        <span>Java</span>
+        <span>ASP.NET Core</span>
+        <span>Chart.js</span>
+        <span>Docker</span>
+      </div>
+    </section>
+
+    <section id="team" class="section section-alt">
+      <div class="container">
+        <h2>Team Netwerkt</h2>
+        <p class="section-intro">KdG The Lab 2026 - Team 41</p>
+
+        <figure class="team-photo card">
+          <img src="team_pic.jpg" alt="Team Netwerkt group picture">
+          <figcaption>Team Netwerkt - Format Benchmarks</figcaption>
+        </figure>
+
+        <div class="grid cards-3">
+          <article class="card person">
+            <h3>Tom Verschuren</h3>
+            <p>Benchmark implementation and performance analysis.</p>
+          </article> 
+          <article class="card person">
+            <h3>Sefkan Ozmen</h3>
+            <p>Project engineering and platform integration.</p>
+          </article>
+          <article class="card person">
+            <h3>Xander Geluykens</h3>
+            <p>Runtime tooling, schema workflows, and delivery.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="video" class="section container">
+      <h2>Pitch Video</h2>
+
+      <div class="video-frame placeholder" role="region" aria-label="Pitch video placeholder">
+        <div class="play-glyph" aria-hidden="true"></div>
+        <p><strong>Pitch video coming soon</strong></p>
+        <!-- <iframe
+        src="https://www.youtube.com/embed/###"
+        title="Format Benchmarks Pitch"
+        allowfullscreen></iframe> -->      
+     </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>Format Benchmarks</span>
+      <span>MIT License</span>
+      <a href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">github.com/Pefki/FormatBenchmarks</a>
+    </div>
+  </footer>
+</body>
+</html>
