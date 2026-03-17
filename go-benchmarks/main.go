@@ -27,6 +27,8 @@ func main() {
 		"Comma-separated payload sizes to test (small, medium, large)")
 	output := flag.String("output", "results/benchmark_results.json",
 		"Output file path")
+	nestingDepth := flag.Int("nesting-depth", 0,
+		"Target payload nesting depth (applies to generated test data)")
 
 	flag.Parse()
 
@@ -40,18 +42,21 @@ func main() {
 	fmt.Printf("  Warmup:      %d\n", *warmup)
 	fmt.Printf("  Formats:     %s\n", strings.Join(formats, ", "))
 	fmt.Printf("  Sizes:       %s\n", strings.Join(sizes, ", "))
+	if *nestingDepth > 0 {
+		fmt.Printf("  Nesting:     %d\n", *nestingDepth)
+	}
 	fmt.Printf("  Output:      %s\n", *output)
 	fmt.Println(strings.Repeat("=", 60))
 
 	// Generate test data for each size
 	testData := make(map[string]models.BenchmarkMessage)
 	for _, size := range sizes {
-		testData[size] = models.GenerateTestData(size)
+		testData[size] = models.GenerateTestDataWithNesting(size, *nestingDepth)
 		fmt.Printf("  Test data '%s' generated\n", size)
 	}
 
 	// Run benchmarks
-	runner := benchmarks.NewRunner(*iterations, *warmup, formats)
+	runner := benchmarks.NewRunner(*iterations, *warmup, *nestingDepth, formats)
 	results := runner.RunAll(testData)
 
 	// Ensure output directory exists

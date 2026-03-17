@@ -158,7 +158,7 @@ All benchmark runners use similar flags:
 - `--formats`
 - `--sizes`
 - `--output`
-- `--nesting-depth` (Python runner)
+- `--nesting-depth`
 
 ### Python
 

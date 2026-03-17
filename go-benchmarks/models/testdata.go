@@ -20,18 +20,77 @@ func randomString(rng *rand.Rand, length int) string {
 // Sizes: "small", "medium", "large".
 // Uses a fixed seed (42) for reproducible results matching the Python suite.
 func GenerateTestData(size string) BenchmarkMessage {
+	return GenerateTestDataWithNesting(size, 0)
+}
+
+// GenerateTestDataWithNesting generates test data and applies a target nesting depth when provided.
+// Depths above 4 are clamped because the Go message schema has a maximum structural depth of 4.
+func GenerateTestDataWithNesting(size string, nestingDepth int) BenchmarkMessage {
 	rng := rand.New(rand.NewSource(42))
 
+	var msg BenchmarkMessage
 	switch size {
 	case "small":
-		return generateSmall()
+		msg = generateSmall()
 	case "medium":
-		return generateMedium(rng)
+		msg = generateMedium(rng)
 	case "large":
-		return generateLarge(rng)
+		msg = generateLarge(rng)
 	default:
 		panic("unknown size: " + size + " (use small, medium, large)")
 	}
+
+	if nestingDepth <= 0 {
+		return msg
+	}
+
+	return applyNestingDepth(msg, nestingDepth)
+}
+
+func applyNestingDepth(msg BenchmarkMessage, nestingDepth int) BenchmarkMessage {
+	if nestingDepth < 1 {
+		nestingDepth = 1
+	}
+	if nestingDepth > 4 {
+		nestingDepth = 4
+	}
+
+	switch nestingDepth {
+	case 1:
+		msg.Tags = nil
+		msg.Metadata = nil
+		msg.NestedData = nil
+		msg.Items = nil
+	case 2:
+		if len(msg.Tags) == 0 {
+			msg.Tags = []string{"tag"}
+		}
+		if len(msg.Metadata) == 0 {
+			msg.Metadata = map[string]string{"source": "benchmark"}
+		}
+		msg.NestedData = nil
+		msg.Items = nil
+	case 3:
+		if msg.NestedData == nil {
+			msg.NestedData = &NestedData{Field1: "leaf", Field2: 1, Values: []float64{1.0}}
+		}
+		if len(msg.NestedData.Values) == 0 {
+			msg.NestedData.Values = []float64{1.0}
+		}
+		msg.Items = nil
+	default:
+		if msg.NestedData == nil {
+			msg.NestedData = &NestedData{Field1: "leaf", Field2: 1, Values: []float64{1.0}}
+		}
+		if len(msg.Items) == 0 {
+			msg.Items = []Item{{Name: "item", Value: 1.0, Active: true, Description: "", Tags: []string{"t"}}}
+		}
+		if len(msg.Items[0].Tags) == 0 {
+			msg.Items[0].Tags = []string{"t"}
+		}
+	}
+
+	return msg
 }
 
 // generateSmall creates a small payload (~200-500 bytes).

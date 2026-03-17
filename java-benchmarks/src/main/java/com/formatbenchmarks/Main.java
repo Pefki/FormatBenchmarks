@@ -127,12 +127,15 @@ public final class Main {
             System.out.println("  Warmup:      " + cli.warmup);
             System.out.println("  Formats:     " + String.join(", ", cli.formats));
             System.out.println("  Sizes:       " + String.join(", ", cli.sizes));
+            if (cli.nestingDepth != null) {
+                System.out.println("  Nesting:     " + cli.nestingDepth);
+            }
             System.out.println("  Output:      " + cli.output);
             System.out.println("=".repeat(60));
 
             Map<String, Map<String, Object>> testData = new LinkedHashMap<>();
             for (String size : cli.sizes) {
-                testData.put(size, generateTestData(size));
+                testData.put(size, generateTestData(size, cli.nestingDepth));
                 System.out.println("  Test data '" + size + "' generated");
             }
 
@@ -175,7 +178,7 @@ public final class Main {
             RunResult run = new RunResult();
             run.timestamp = TS.format(Instant.now());
             run.systemInfo = getSystemInfo();
-            run.config = new RunConfig(cli.iterations, cli.warmup, cli.formats, cli.sizes, skipped);
+            run.config = new RunConfig(cli.iterations, cli.warmup, cli.formats, cli.sizes, skipped, cli.nestingDepth);
             run.results = results;
 
             Path output = Path.of(cli.output);
@@ -433,6 +436,7 @@ public final class Main {
         int warmup = 100;
         List<String> formats = splitCsv(DEFAULT_FORMATS);
         List<String> sizes = splitCsv(DEFAULT_SIZES);
+        Integer nestingDepth = null;
         String output = DEFAULT_OUTPUT;
 
         for (int i = 0; i < args.length; i++) {
@@ -458,6 +462,13 @@ public final class Main {
                     i++;
                     output = requireValue(arg, args, i);
                 }
+                case "-nesting-depth", "--nesting-depth" -> {
+                    i++;
+                    nestingDepth = Integer.parseInt(requireValue(arg, args, i));
+                    if (nestingDepth < 1) {
+                        throw new IllegalArgumentException("nesting-depth must be >= 1");
+                    }
+                }
                 case "-h", "--help" -> {
                     printHelp();
                     System.exit(0);
@@ -466,7 +477,7 @@ public final class Main {
             }
         }
 
-        return new CliArgs(iterations, warmup, formats, sizes, output);
+        return new CliArgs(iterations, warmup, formats, sizes, nestingDepth, output);
     }
 
     private static String requireValue(String option, String[] args, int index) {
@@ -491,18 +502,95 @@ public final class Main {
         System.out.println("Message Format Benchmark Suite (Java)");
         System.out.println();
         System.out.println("Usage:");
-        System.out.println("  java -jar benchmark.jar --iterations N --warmup N --formats a,b,c --sizes a,b,c --output FILE");
+        System.out.println("  java -jar benchmark.jar --iterations N --warmup N --formats a,b,c --sizes a,b,c --nesting-depth N --output FILE");
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> generateTestData(String size) {
+    private static Map<String, Object> generateTestData(String size, Integer nestingDepth) {
         Random random = new Random(42);
-        return switch (size.toLowerCase(Locale.ROOT)) {
+        Map<String, Object> data = switch (size.toLowerCase(Locale.ROOT)) {
             case "small" -> generateSmall();
             case "medium" -> generateMedium(random);
             case "large" -> generateLarge(random);
             default -> generateSmall();
         };
+
+        if (nestingDepth != null) {
+            applyNestingDepth(data, nestingDepth);
+        }
+
+        return data;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void applyNestingDepth(Map<String, Object> data, int requestedDepth) {
+        int depth = Math.max(1, Math.min(4, requestedDepth));
+
+        switch (depth) {
+            case 1 -> {
+                data.put("tags", List.of());
+                data.put("metadata", Map.of());
+                data.put("nested_data", null);
+                data.put("items", List.of());
+            }
+            case 2 -> {
+                if (!(data.get("tags") instanceof List<?> tags) || tags.isEmpty()) {
+                    data.put("tags", List.of("tag"));
+                }
+                if (!(data.get("metadata") instanceof Map<?, ?> meta) || meta.isEmpty()) {
+                    data.put("metadata", Map.of("source", "benchmark"));
+                }
+                data.put("nested_data", null);
+                data.put("items", List.of());
+            }
+            case 3 -> {
+                Object nestedObj = data.get("nested_data");
+                Map<String, Object> nested;
+                if (nestedObj instanceof Map<?, ?> existing) {
+                    nested = (Map<String, Object>) existing;
+                } else {
+                    nested = new LinkedHashMap<>();
+                    nested.put("field1", "leaf");
+                    nested.put("field2", 1L);
+                    nested.put("values", new ArrayList<>(List.of(1.0)));
+                }
+                if (!(nested.get("values") instanceof List<?> values) || values.isEmpty()) {
+                    nested.put("values", new ArrayList<>(List.of(1.0)));
+                }
+                data.put("nested_data", nested);
+                data.put("items", List.of());
+            }
+            default -> {
+                Object nestedObj = data.get("nested_data");
+                if (!(nestedObj instanceof Map<?, ?>)) {
+                    Map<String, Object> nested = new LinkedHashMap<>();
+                    nested.put("field1", "leaf");
+                    nested.put("field2", 1L);
+                    nested.put("values", new ArrayList<>(List.of(1.0)));
+                    data.put("nested_data", nested);
+                }
+
+                Object itemsObj = data.get("items");
+                if (!(itemsObj instanceof List<?> items) || items.isEmpty()) {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("name", "item");
+                    item.put("value", 1.0);
+                    item.put("active", true);
+                    item.put("description", "");
+                    item.put("tags", new ArrayList<>(List.of("t")));
+                    data.put("items", new ArrayList<>(List.of(item)));
+                } else {
+                    Object first = items.get(0);
+                    if (first instanceof Map<?, ?> firstMap) {
+                        Map<String, Object> typed = (Map<String, Object>) firstMap;
+                        Object tagsObj = typed.get("tags");
+                        if (!(tagsObj instanceof List<?> tags) || tags.isEmpty()) {
+                            typed.put("tags", new ArrayList<>(List.of("t")));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private static Map<String, Object> generateSmall() {
@@ -950,7 +1038,7 @@ public final class Main {
         }
     }
 
-    private record CliArgs(int iterations, int warmup, List<String> formats, List<String> sizes, String output) {}
+    private record CliArgs(int iterations, int warmup, List<String> formats, List<String> sizes, Integer nestingDepth, String output) {}
 
     private static final class RunResult {
         public String timestamp;
@@ -974,13 +1062,15 @@ public final class Main {
         public List<String> formats;
         public List<String> payloadSizes;
         public List<String> skippedFormats;
+        public Integer nestingDepth;
 
-        public RunConfig(int iterations, int warmup, List<String> formats, List<String> payloadSizes, List<String> skippedFormats) {
+        public RunConfig(int iterations, int warmup, List<String> formats, List<String> payloadSizes, List<String> skippedFormats, Integer nestingDepth) {
             this.iterations = iterations;
             this.warmup = warmup;
             this.formats = formats;
             this.payloadSizes = payloadSizes;
             this.skippedFormats = skippedFormats;
+            this.nestingDepth = nestingDepth;
         }
     }
 

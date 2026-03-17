@@ -164,6 +164,7 @@ struct CliArgs {
     warmup: usize,
     formats: Vec<String>,
     sizes: Vec<String>,
+    nesting_depth: Option<usize>,
     output: String,
 }
 
@@ -272,6 +273,7 @@ struct RunConfig {
     warmup: usize,
     formats: Vec<String>,
     payload_sizes: Vec<String>,
+    nesting_depth: Option<usize>,
     skipped_formats: Vec<String>,
 }
 
@@ -647,12 +649,15 @@ fn main() -> Result<()> {
     println!("  Warmup:      {}", args.warmup);
     println!("  Formats:     {}", args.formats.join(", "));
     println!("  Sizes:       {}", args.sizes.join(", "));
+    if let Some(depth) = args.nesting_depth {
+        println!("  Nesting:     {}", depth);
+    }
     println!("  Output:      {}", args.output);
     println!("{}", "=".repeat(60));
 
     let mut test_data = BTreeMap::new();
     for size in &args.sizes {
-        test_data.insert(size.clone(), generate_test_data(size));
+        test_data.insert(size.clone(), generate_test_data(size, args.nesting_depth));
         println!("  Test data '{}' generated", size);
     }
 
@@ -706,6 +711,7 @@ fn main() -> Result<()> {
             warmup: args.warmup,
             formats: args.formats,
             payload_sizes: args.sizes,
+            nesting_depth: args.nesting_depth,
             skipped_formats: skipped,
         },
         results,
@@ -735,6 +741,7 @@ fn parse_args() -> Result<CliArgs> {
     let mut warmup = 100usize;
     let mut formats = DEFAULT_FORMATS.split(',').map(str::to_string).collect::<Vec<_>>();
     let mut sizes = DEFAULT_SIZES.split(',').map(str::to_string).collect::<Vec<_>>();
+    let mut nesting_depth: Option<usize> = None;
     let mut output = DEFAULT_OUTPUT.to_string();
 
     let mut i = 1usize;
@@ -782,6 +789,18 @@ fn parse_args() -> Result<CliArgs> {
                     .ok_or_else(|| anyhow!("missing value for output"))?
                     .to_string();
             }
+            "-nesting-depth" | "--nesting-depth" => {
+                i += 1;
+                let depth = args
+                    .get(i)
+                    .ok_or_else(|| anyhow!("missing value for nesting-depth"))?
+                    .parse::<usize>()
+                    .context("invalid nesting-depth value")?;
+                if depth == 0 {
+                    return Err(anyhow!("nesting-depth must be >= 1"));
+                }
+                nesting_depth = Some(depth);
+            }
             "-h" | "--help" => {
                 print_help();
                 std::process::exit(0);
@@ -798,6 +817,7 @@ fn parse_args() -> Result<CliArgs> {
         warmup,
         formats,
         sizes,
+        nesting_depth,
         output,
     })
 }
@@ -806,7 +826,7 @@ fn print_help() {
     println!("Message Format Benchmark Suite (Rust)");
     println!();
     println!("Usage:");
-    println!("  benchmark [-iterations N] [-warmup N] [-formats a,b,c] [-sizes a,b,c] [-output FILE]");
+    println!("  benchmark [-iterations N] [-warmup N] [-formats a,b,c] [-sizes a,b,c] [-nesting-depth N] [-output FILE]");
 }
 
 fn run_benchmark(
@@ -1058,14 +1078,79 @@ fn mean(values: &[f64]) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64
 }
 
-fn generate_test_data(size: &str) -> BenchmarkMessageData {
+fn generate_test_data(size: &str, nesting_depth: Option<usize>) -> BenchmarkMessageData {
     let mut rng = StdRng::seed_from_u64(42);
 
-    match size {
+    let mut data = match size {
         "small" => generate_small(),
         "medium" => generate_medium(&mut rng),
         "large" => generate_large(&mut rng),
         _ => generate_small(),
+    };
+
+    if let Some(depth) = nesting_depth {
+        apply_nesting_depth(&mut data, depth);
+    }
+
+    data
+}
+
+fn apply_nesting_depth(data: &mut BenchmarkMessageData, requested_depth: usize) {
+    let depth = requested_depth.clamp(1, 4);
+
+    match depth {
+        1 => {
+            data.tags.clear();
+            data.metadata.clear();
+            data.nested_data = None;
+            data.items.clear();
+        }
+        2 => {
+            if data.tags.is_empty() {
+                data.tags.push("tag".to_string());
+            }
+            if data.metadata.is_empty() {
+                data.metadata
+                    .insert("source".to_string(), "benchmark".to_string());
+            }
+            data.nested_data = None;
+            data.items.clear();
+        }
+        3 => {
+            if data.nested_data.is_none() {
+                data.nested_data = Some(NestedData {
+                    field1: "leaf".to_string(),
+                    field2: 1,
+                    values: vec![1.0],
+                });
+            }
+            if let Some(nested) = &mut data.nested_data {
+                if nested.values.is_empty() {
+                    nested.values.push(1.0);
+                }
+            }
+            data.items.clear();
+        }
+        _ => {
+            if data.nested_data.is_none() {
+                data.nested_data = Some(NestedData {
+                    field1: "leaf".to_string(),
+                    field2: 1,
+                    values: vec![1.0],
+                });
+            }
+            if data.items.is_empty() {
+                data.items.push(ItemData {
+                    name: "item".to_string(),
+                    value: 1.0,
+                    active: true,
+                    description: String::new(),
+                    tags: vec!["t".to_string()],
+                });
+            } else if data.items[0].tags.is_empty() {
+                data.items[0].tags.push("t".to_string());
+            }
+        }
     }
 }
 

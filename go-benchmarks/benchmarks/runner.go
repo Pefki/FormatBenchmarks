@@ -35,6 +35,7 @@ type RunConfig struct {
 	Warmup         int      `json:"warmup"`
 	Formats        []string `json:"formats"`
 	PayloadSizes   []string `json:"payload_sizes"`
+	NestingDepth   int      `json:"nesting_depth,omitempty"`
 	SkippedFormats []string `json:"skipped_formats"`
 }
 
@@ -42,17 +43,19 @@ type RunConfig struct {
 type Runner struct {
 	Iterations int
 	Warmup     int
+	NestingDepth int
 	Formats    []string
 	benchmarks map[string]FormatBenchmark
 }
 
 // NewRunner creates a new benchmark runner with the given configuration.
-func NewRunner(iterations, warmup int, formats []string) *Runner {
+func NewRunner(iterations, warmup, nestingDepth int, formats []string) *Runner {
 	r := &Runner{
-		Iterations: iterations,
-		Warmup:     warmup,
-		Formats:    formats,
-		benchmarks: make(map[string]FormatBenchmark),
+		Iterations:   iterations,
+		Warmup:       warmup,
+		NestingDepth: nestingDepth,
+		Formats:      formats,
+		benchmarks:   make(map[string]FormatBenchmark),
 	}
 	r.loadBenchmarks()
 	return r
@@ -168,6 +171,7 @@ func (r *Runner) RunAll(testData map[string]models.BenchmarkMessage) *RunResult 
 			Warmup:         r.Warmup,
 			Formats:        r.Formats,
 			PayloadSizes:   sizes,
+			NestingDepth:   r.NestingDepth,
 			SkippedFormats: skipped,
 		},
 		Results: results,

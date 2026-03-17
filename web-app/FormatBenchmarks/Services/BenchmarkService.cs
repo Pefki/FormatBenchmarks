@@ -112,6 +112,10 @@ public class BenchmarkService
     public async Task<BenchmarkRun> RunBenchmarkAsync(RunBenchmarkRequest request)
     {
         var language = (request.Language ?? "python").Trim().ToLowerInvariant();
+        int? normalizedNestingDepth = request.NestingDepth.HasValue
+            ? Math.Clamp(request.NestingDepth.Value, 1, 8)
+            : null;
+        request.NestingDepth = normalizedNestingDepth;
 
         var run = new BenchmarkRun
         {
@@ -119,7 +123,7 @@ public class BenchmarkService
             {
                 Iterations = request.Iterations,
                 Warmup = request.Warmup,
-                NestingDepth = request.NestingDepth,
+                NestingDepth = normalizedNestingDepth,
                 Formats = request.Formats,
                 PayloadSizes = request.Sizes,
             },
@@ -185,46 +189,64 @@ public class BenchmarkService
 
         _logger.LogInformation("Start Java benchmark: {Id}", run.Id);
 
-        var psi = new ProcessStartInfo
+        ProcessStartInfo BuildPsi(bool includeNestingDepth)
         {
-            FileName = _javaPath,
-            WorkingDirectory = javaDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
+            var psi = new ProcessStartInfo
+            {
+                FileName = _javaPath,
+                WorkingDirectory = javaDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
 
-        psi.ArgumentList.Add("-jar");
-        psi.ArgumentList.Add(_javaJarPath);
-        psi.ArgumentList.Add("--iterations");
-        psi.ArgumentList.Add(request.Iterations.ToString());
-        psi.ArgumentList.Add("--warmup");
-        psi.ArgumentList.Add(request.Warmup.ToString());
-        psi.ArgumentList.Add("--formats");
-        psi.ArgumentList.Add(string.Join(",", request.Formats));
-        psi.ArgumentList.Add("--sizes");
-        psi.ArgumentList.Add(string.Join(",", request.Sizes));
-        psi.ArgumentList.Add("--output");
-        psi.ArgumentList.Add(outputPath);
+            psi.ArgumentList.Add("-jar");
+            psi.ArgumentList.Add(_javaJarPath);
+            psi.ArgumentList.Add("--iterations");
+            psi.ArgumentList.Add(request.Iterations.ToString());
+            psi.ArgumentList.Add("--warmup");
+            psi.ArgumentList.Add(request.Warmup.ToString());
+            psi.ArgumentList.Add("--formats");
+            psi.ArgumentList.Add(string.Join(",", request.Formats));
+            psi.ArgumentList.Add("--sizes");
+            psi.ArgumentList.Add(string.Join(",", request.Sizes));
+            if (includeNestingDepth && request.NestingDepth is int javaDepth)
+            {
+                psi.ArgumentList.Add("--nesting-depth");
+                psi.ArgumentList.Add(javaDepth.ToString());
+            }
+            psi.ArgumentList.Add("--output");
+            psi.ArgumentList.Add(outputPath);
+            return psi;
+        }
 
+        var psi = BuildPsi(includeNestingDepth: true);
         _logger.LogInformation("Command: {Java} {Args}",
             _javaPath, string.Join(" ", psi.ArgumentList));
 
-        using var process = Process.Start(psi)
-            ?? throw new InvalidOperationException("Could not start Java process");
+        var (exitCode, stdout, stderr) = await RunProcessAsync(psi);
 
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        var stderr = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        if (exitCode != 0
+            && request.NestingDepth.HasValue
+            && IsUnknownNestingDepthFlagError(stdout, stderr))
+        {
+            _logger.LogWarning(
+                "Java artifact does not support nesting-depth yet. Rebuilding and retrying with --nesting-depth.");
+            await RebuildJavaBenchmarkAsync();
+            psi = BuildPsi(includeNestingDepth: true);
+            _logger.LogInformation("Retry command after rebuild: {Java} {Args}",
+                _javaPath, string.Join(" ", psi.ArgumentList));
+            (exitCode, stdout, stderr) = await RunProcessAsync(psi);
+        }
 
         _logger.LogInformation("Java stdout:\n{Output}", stdout);
         if (!string.IsNullOrEmpty(stderr))
             _logger.LogWarning("Java stderr:\n{Error}", stderr);
 
-        if (process.ExitCode != 0)
+        if (exitCode != 0)
         {
-            throw new InvalidOperationException($"Java exit code: {process.ExitCode}\n{stderr}");
+            throw new InvalidOperationException($"Java exit code: {exitCode}\n{stderr}");
         }
 
         if (File.Exists(outputPath))
@@ -272,44 +294,62 @@ public class BenchmarkService
 
         _logger.LogInformation("Start Rust benchmark: {Id}", run.Id);
 
-        var psi = new ProcessStartInfo
+        ProcessStartInfo BuildPsi(bool includeNestingDepth)
         {
-            FileName = _rustPath,
-            WorkingDirectory = rustDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
+            var psi = new ProcessStartInfo
+            {
+                FileName = _rustPath,
+                WorkingDirectory = rustDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
 
-        psi.ArgumentList.Add("--iterations");
-        psi.ArgumentList.Add(request.Iterations.ToString());
-        psi.ArgumentList.Add("--warmup");
-        psi.ArgumentList.Add(request.Warmup.ToString());
-        psi.ArgumentList.Add("--formats");
-        psi.ArgumentList.Add(string.Join(",", request.Formats));
-        psi.ArgumentList.Add("--sizes");
-        psi.ArgumentList.Add(string.Join(",", request.Sizes));
-        psi.ArgumentList.Add("--output");
-        psi.ArgumentList.Add(outputPath);
+            psi.ArgumentList.Add("--iterations");
+            psi.ArgumentList.Add(request.Iterations.ToString());
+            psi.ArgumentList.Add("--warmup");
+            psi.ArgumentList.Add(request.Warmup.ToString());
+            psi.ArgumentList.Add("--formats");
+            psi.ArgumentList.Add(string.Join(",", request.Formats));
+            psi.ArgumentList.Add("--sizes");
+            psi.ArgumentList.Add(string.Join(",", request.Sizes));
+            if (includeNestingDepth && request.NestingDepth is int rustDepth)
+            {
+                psi.ArgumentList.Add("--nesting-depth");
+                psi.ArgumentList.Add(rustDepth.ToString());
+            }
+            psi.ArgumentList.Add("--output");
+            psi.ArgumentList.Add(outputPath);
+            return psi;
+        }
 
+        var psi = BuildPsi(includeNestingDepth: true);
         _logger.LogInformation("Command: {Rust} {Args}",
             _rustPath, string.Join(" ", psi.ArgumentList));
 
-        using var process = Process.Start(psi)
-            ?? throw new InvalidOperationException("Could not start Rust process");
+        var (exitCode, stdout, stderr) = await RunProcessAsync(psi);
 
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        var stderr = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        if (exitCode != 0
+            && request.NestingDepth.HasValue
+            && IsUnknownNestingDepthFlagError(stdout, stderr))
+        {
+            _logger.LogWarning(
+                "Rust binary does not support nesting-depth yet. Rebuilding and retrying with --nesting-depth.");
+            await RebuildRustBenchmarkAsync();
+            psi = BuildPsi(includeNestingDepth: true);
+            _logger.LogInformation("Retry command after rebuild: {Rust} {Args}",
+                _rustPath, string.Join(" ", psi.ArgumentList));
+            (exitCode, stdout, stderr) = await RunProcessAsync(psi);
+        }
 
         _logger.LogInformation("Rust stdout:\n{Output}", stdout);
         if (!string.IsNullOrEmpty(stderr))
             _logger.LogWarning("Rust stderr:\n{Error}", stderr);
 
-        if (process.ExitCode != 0)
+        if (exitCode != 0)
         {
-            throw new InvalidOperationException($"Rust exit code: {process.ExitCode}\n{stderr}");
+            throw new InvalidOperationException($"Rust exit code: {exitCode}\n{stderr}");
         }
 
         var resolvedOutputPath = ResolveRustOutputPath(
@@ -577,44 +617,62 @@ public class BenchmarkService
 
         _logger.LogInformation("Start Go benchmark: {Id}", run.Id);
 
-        var psi = new ProcessStartInfo
+        ProcessStartInfo BuildPsi(bool includeNestingDepth)
         {
-            FileName = _goPath,
-            WorkingDirectory = goDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
+            var psi = new ProcessStartInfo
+            {
+                FileName = _goPath,
+                WorkingDirectory = goDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
 
-        psi.ArgumentList.Add("-iterations");
-        psi.ArgumentList.Add(request.Iterations.ToString());
-        psi.ArgumentList.Add("-warmup");
-        psi.ArgumentList.Add(request.Warmup.ToString());
-        psi.ArgumentList.Add("-formats");
-        psi.ArgumentList.Add(string.Join(",", request.Formats));
-        psi.ArgumentList.Add("-sizes");
-        psi.ArgumentList.Add(string.Join(",", request.Sizes));
-        psi.ArgumentList.Add("-output");
-        psi.ArgumentList.Add(outputPath);
+            psi.ArgumentList.Add("-iterations");
+            psi.ArgumentList.Add(request.Iterations.ToString());
+            psi.ArgumentList.Add("-warmup");
+            psi.ArgumentList.Add(request.Warmup.ToString());
+            psi.ArgumentList.Add("-formats");
+            psi.ArgumentList.Add(string.Join(",", request.Formats));
+            psi.ArgumentList.Add("-sizes");
+            psi.ArgumentList.Add(string.Join(",", request.Sizes));
+            if (includeNestingDepth && request.NestingDepth is int goDepth)
+            {
+                psi.ArgumentList.Add("-nesting-depth");
+                psi.ArgumentList.Add(goDepth.ToString());
+            }
+            psi.ArgumentList.Add("-output");
+            psi.ArgumentList.Add(outputPath);
+            return psi;
+        }
 
+        var psi = BuildPsi(includeNestingDepth: true);
         _logger.LogInformation("Command: {Go} {Args}",
             _goPath, string.Join(" ", psi.ArgumentList));
 
-        using var process = Process.Start(psi)
-            ?? throw new InvalidOperationException("Could not start Go process");
+        var (exitCode, stdout, stderr) = await RunProcessAsync(psi);
 
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        var stderr = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        if (exitCode != 0
+            && request.NestingDepth.HasValue
+            && IsUnknownNestingDepthFlagError(stdout, stderr))
+        {
+            _logger.LogWarning(
+                "Go binary does not support nesting-depth yet. Rebuilding and retrying with -nesting-depth.");
+            await RebuildGoBenchmarkAsync();
+            psi = BuildPsi(includeNestingDepth: true);
+            _logger.LogInformation("Retry command after rebuild: {Go} {Args}",
+                _goPath, string.Join(" ", psi.ArgumentList));
+            (exitCode, stdout, stderr) = await RunProcessAsync(psi);
+        }
 
         _logger.LogInformation("Go stdout:\n{Output}", stdout);
         if (!string.IsNullOrEmpty(stderr))
             _logger.LogWarning("Go stderr:\n{Error}", stderr);
 
-        if (process.ExitCode != 0)
+        if (exitCode != 0)
         {
-            throw new InvalidOperationException($"Go exit code: {process.ExitCode}\n{stderr}");
+            throw new InvalidOperationException($"Go exit code: {exitCode}\n{stderr}");
         }
 
         // Read and parse Go results (same JSON structure as Python)
@@ -664,6 +722,133 @@ public class BenchmarkService
         {
             return _runs.FirstOrDefault(r => r.Id == id);
         }
+    }
+
+    private static bool IsUnknownNestingDepthFlagError(string stdout, string stderr)
+    {
+        var combined = $"{stdout}\n{stderr}".ToLowerInvariant();
+        return combined.Contains("nesting-depth")
+            && (combined.Contains("unknown argument")
+                || combined.Contains("flag provided but not defined"));
+    }
+
+    private async Task RebuildGoBenchmarkAsync()
+    {
+        var startDir = Path.GetDirectoryName(_goPath) ?? _goPath;
+        var projectDir = FindDirectoryContaining(startDir, "go.mod")
+            ?? throw new InvalidOperationException($"Could not find go.mod starting from {startDir}");
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "go",
+            WorkingDirectory = projectDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        psi.ArgumentList.Add("build");
+        psi.ArgumentList.Add("-o");
+        psi.ArgumentList.Add(_goPath);
+        psi.ArgumentList.Add(".");
+
+        _logger.LogInformation("Rebuilding Go benchmark binary: {Command} {Args}",
+            psi.FileName, string.Join(" ", psi.ArgumentList));
+
+        var (exitCode, stdout, stderr) = await RunProcessAsync(psi);
+        if (exitCode != 0)
+        {
+            throw new InvalidOperationException($"Go rebuild failed (exit {exitCode})\n{stderr}\n{stdout}");
+        }
+    }
+
+    private async Task RebuildRustBenchmarkAsync()
+    {
+        var startDir = Path.GetDirectoryName(_rustPath) ?? _rustPath;
+        var projectDir = FindDirectoryContaining(startDir, "Cargo.toml")
+            ?? throw new InvalidOperationException($"Could not find Cargo.toml starting from {startDir}");
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "cargo",
+            WorkingDirectory = projectDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        psi.ArgumentList.Add("build");
+        psi.ArgumentList.Add("--release");
+
+        _logger.LogInformation("Rebuilding Rust benchmark binary: {Command} {Args}",
+            psi.FileName, string.Join(" ", psi.ArgumentList));
+
+        var (exitCode, stdout, stderr) = await RunProcessAsync(psi);
+        if (exitCode != 0)
+        {
+            throw new InvalidOperationException($"Rust rebuild failed (exit {exitCode})\n{stderr}\n{stdout}");
+        }
+    }
+
+    private async Task RebuildJavaBenchmarkAsync()
+    {
+        var startDir = Path.GetDirectoryName(_javaJarPath) ?? _javaJarPath;
+        var projectDir = FindDirectoryContaining(startDir, "pom.xml")
+            ?? throw new InvalidOperationException($"Could not find pom.xml starting from {startDir}");
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "mvn",
+            WorkingDirectory = projectDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        psi.ArgumentList.Add("-DskipTests");
+        psi.ArgumentList.Add("package");
+
+        _logger.LogInformation("Rebuilding Java benchmark artifact: {Command} {Args}",
+            psi.FileName, string.Join(" ", psi.ArgumentList));
+
+        var (exitCode, stdout, stderr) = await RunProcessAsync(psi);
+        if (exitCode != 0)
+        {
+            throw new InvalidOperationException($"Java rebuild failed (exit {exitCode})\n{stderr}\n{stdout}");
+        }
+    }
+
+    private static string? FindDirectoryContaining(string startPath, string markerFileName)
+    {
+        var current = new DirectoryInfo(startPath);
+        if (!current.Exists && current.Parent != null)
+        {
+            current = current.Parent;
+        }
+
+        while (current != null)
+        {
+            var marker = Path.Combine(current.FullName, markerFileName);
+            if (File.Exists(marker))
+            {
+                return current.FullName;
+            }
+            current = current.Parent;
+        }
+
+        return null;
+    }
+
+    private static async Task<(int ExitCode, string Stdout, string Stderr)> RunProcessAsync(ProcessStartInfo psi)
+    {
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException($"Could not start process: {psi.FileName}");
+
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        return (process.ExitCode, stdout, stderr);
     }
 
     /// <summary>
