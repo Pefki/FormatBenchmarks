@@ -10,54 +10,107 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="lang-en">
   <div class="noise" aria-hidden="true"></div>
-  <header class="hero">
+  
+  <div class="nav-sticky">
     <nav class="nav container">
       <div class="brand">Format Benchmarks</div>
       <div class="nav-links">
-        <a href="#project">Project</a>
-        <a href="#team">Team</a>
-        <a href="#video">Pitch Video</a>
+        <a href="#project" data-lang-content="en">Project</a>
+        <a href="#project" data-lang-content="nl">Project</a>
+        <a href="#team" data-lang-content="en">Team</a>
+        <a href="#team" data-lang-content="nl">Team</a>
+        <a href="#article" data-lang-content="en">Article</a>
+        <a href="#article" data-lang-content="nl">Artikel</a>
+        <a href="#video" data-lang-content="en">Pitch Video</a>
+        <a href="#video" data-lang-content="nl">Pitch Video</a>
         <a href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">GitHub</a>
+        
+        <div class="lang-switcher">
+          <button class="lang-btn active" onclick="setLanguage('en')">EN</button>
+          <button class="lang-btn" onclick="setLanguage('nl')">NL</button>
+        </div>
       </div>
     </nav>
+  </div>
 
+  <header class="hero">
     <div class="container hero-content">
       <p class="kicker">KdG The Lab 2025-2026</p>
-      <h1>Benchmarking message formats across runtimes.</h1>
-      <p class="lead">
-        A practical platform to compare serialization speed, payload size, memory behavior, compression,
-        and throughput for JSON, BSON, Protobuf, Cap'n Proto, MessagePack, Avro, and FlatBuffers.
-      </p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="https://bench.pefki.xyz" target="_blank" rel="noreferrer">Open Live Demo</a>
-        <a class="btn btn-ghost" href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">View Repository</a>
+      
+      <div data-lang-content="en">
+        <h1>Benchmarking message formats across runtimes.</h1>
+        <p class="lead">
+          A practical platform to compare serialization speed, payload size, memory behavior, compression,
+          and throughput for JSON, BSON, Protobuf, Cap'n Proto, MessagePack, Avro, and FlatBuffers.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://bench.pefki.xyz" target="_blank" rel="noreferrer">Open Live Demo</a>
+          <a class="btn btn-ghost" href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">View Repository</a>
+        </div>
+      </div>
+
+      <div data-lang-content="nl">
+        <h1>Berichtformaten benchmarken over runtimes.</h1>
+        <p class="lead">
+          Een praktisch platform om serialisatiesnelheid, payloadgrootte, geheugengedrag, compressie en 
+          throughput te vergelijken voor JSON, BSON, Protobuf, Cap'n Proto, MessagePack, Avro en FlatBuffers.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://bench.pefki.xyz" target="_blank" rel="noreferrer">Open Live Demo</a>
+          <a class="btn btn-ghost" href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">Bekijk Repository</a>
+        </div>
       </div>
     </div>
   </header>
 
   <main>
     <section id="project" class="section container">
-      <h2>Project Snapshot</h2>
-      <p class="section-intro">
-        Format Benchmarks combines independent benchmark runners and one web dashboard, making results easy to run,
-        compare, and present.
-      </p>
+      <div data-lang-content="en">
+        <h2>Project Snapshot</h2>
+        <p class="section-intro">
+          Format Benchmarks combines independent benchmark runners and one web dashboard, making results easy to run,
+          compare, and present.
+        </p>
 
-      <div class="grid cards-3">
-        <article class="card">
-          <h3>Multi-language stack</h3>
-          <p>Python, Go, Rust, and Java benchmark backends orchestrated by an ASP.NET Core web app.</p>
-        </article>
-        <article class="card">
-          <h3>Metrics that matter</h3>
-          <p>Serialization and deserialization latency, round-trip, memory usage, compression ratio, and throughput.</p>
-        </article>
-        <article class="card">
-          <h3>Built for comparison</h3>
-          <p>Run history, side-by-side run comparison, charted output, plus JSON/CSV export support.</p>
-        </article>
+        <div class="grid cards-3">
+          <article class="card">
+            <h3>Multi-language stack</h3>
+            <p>Python, Go, Rust, and Java benchmark backends orchestrated by an ASP.NET Core web app.</p>
+          </article>
+          <article class="card">
+            <h3>Metrics that matter</h3>
+            <p>Serialization and deserialization latency, round-trip, memory usage, compression ratio, and throughput.</p>
+          </article>
+          <article class="card">
+            <h3>Built for comparison</h3>
+            <p>Run history, side-by-side run comparison, charted output, plus JSON/CSV export support.</p>
+          </article>
+        </div>
+      </div>
+
+      <div data-lang-content="nl">
+        <h2>Projectoverzicht</h2>
+        <p class="section-intro">
+          Format Benchmarks combineert onafhankelijke benchmark-runners en één webdashboard, waardoor resultaten 
+          eenvoudig uit te voeren, te vergelijken en te presenteren zijn.
+        </p>
+
+        <div class="grid cards-3">
+          <article class="card">
+            <h3>Meertalige stack</h3>
+            <p>Python, Go, Rust en Java benchmark backends aangestuurd door een ASP.NET Core web-app.</p>
+          </article>
+          <article class="card">
+            <h3>Metrics die tellen</h3>
+            <p>Serialisatie- en deserialisatie-latency, round-trip, geheugengebruik, compressieratio en throughput.</p>
+          </article>
+          <article class="card">
+            <h3>Gebouwd voor vergelijking</h3>
+            <p>Run-geschiedenis, side-by-side vergelijking, grafieken, plus JSON/CSV export ondersteuning.</p>
+          </article>
+        </div>
       </div>
 
       <div class="tech-strip" aria-label="Technologies">
@@ -71,53 +124,138 @@
       </div>
     </section>
 
-    <section id="team" class="section section-alt">
-      <div class="container">
-        <h2>Team Netwerkt</h2>
-        <p class="section-intro">KdG The Lab 2026 - Team 41</p>
+    <section id="article" class="section section-alt">
+      <div class="container article-content">
+        <div data-lang-content="en">
+          <h2>Navigating the Binary Landscape: A Deep Dive into Message Formats</h2>
+          
+          <h3>Introduction and Problem Definition</h3>
+          <p>In today's era of microservices, cloud-native applications, and real-time data processing, the efficiency with which systems communicate has become critical. Modern software architectures often consist of hundreds, if not thousands, of independent services that constantly exchange data over networks. This communication is facilitated by 'message formats' — agreements on how data is structured and represented during transport.</p>
+          <p>Over the past two decades, the industry has shifted from heavy, text-based XML to lighter, yet still text-based JSON. While JSON has become the de facto standard for web APIs due to its human readability and simplicity, it brings significant disadvantages in high-performance scenarios. Text-based formats require considerable CPU power for serialization (converting an object in memory to a transmittable format) and deserialization (the reverse process). Moreover, they are redundant and consume relatively high bandwidth.</p>
+          <p>This research focuses on the question: Which message format offers the best balance between performance, compactness, and ease of use across different programming languages? We dive deep into the world of binary alternatives such as Protobuf, Cap'n Proto, and MessagePack to determine when switching from JSON to a binary format is necessary.</p>
 
-        <figure class="team-photo card">
-          <img src="team_pic.jpg" alt="Team Netwerkt group picture">
-          <figcaption>Team Netwerkt - Format Benchmarks</figcaption>
-        </figure>
+          <h3>Technical Focus: The Zero-Copy Revolution</h3>
+          <p>A fascinating aspect is the 'Zero-Copy' architecture of Cap'n Proto and FlatBuffers. Where traditional formats require an explicit decoding step, Zero-Copy formats store data in a structure that is identical in memory to the representation on the network.</p>
+          <p>This means direct access to fields via offsets, without parsing. Our benchmarks confirm this: in Rust, Cap'n Proto reached a deserialization time of just 0.0026 ms for 62KB. This makes them the "latency kings" for real-time systems.</p>
 
-        <div class="grid cards-3">
-          <article class="card person">
-            <h3>Tom Verschuren</h3>
-            <p>Benchmark implementation and performance analysis.</p>
-          </article> 
-          <article class="card person">
-            <h3>Sefkan Ozmen</h3>
-            <p>Project engineering and platform integration.</p>
-          </article>
-          <article class="card person">
-            <h3>Xander Geluykens</h3>
-            <p>Runtime tooling, schema workflows, and delivery.</p>
-          </article>
+          <h3>Analysis of the Findings</h3>
+          <ul>
+            <li><strong>Rust as Performance Leader:</strong> Rust consistently performs best, often 2 to 5 times faster than Go or Java.</li>
+            <li><strong>The C-Extension Effect in Python:</strong> MessagePack (0.007 ms) is extremely fast in Python due to C-extensions, while Protobuf serialization is slow (2.15 ms).</li>
+            <li><strong>Java's Memory Overhead:</strong> Java consumes up to 30x more memory than Rust, which is critical for cloud costs.</li>
+            <li><strong>The JSON Bottleneck in Go:</strong> The standard JSON library in Go is a bottleneck; switching to Protobuf or Avro provides immediate gains.</li>
+          </ul>
+
+          <h3>Conclusion</h3>
+          <p>There is no "one-size-fits-all," but the transition to binary formats is essential for performance. For maximum speed, Rust and Cap'n Proto are the winners. Protobuf is the best all-rounder for microservices. Apache Avro is superior for Big Data. JSON remains the king of public APIs, but for internal communication, binary formats are a necessity.</p>
+        </div>
+
+        <div data-lang-content="nl">
+          <h2>Navigeren door het Binaire Landschap: Een Diepgaande Analyse van Message Formats</h2>
+          
+          <h3>Introductie en Probleemstelling</h3>
+          <p>In het huidige tijdperk van microservices, cloud-native applicaties en real-time dataverwerking is de efficiëntie waarmee systemen onderling communiceren cruciaal geworden. Moderne software-architecturen bestaan vaak uit honderden, zo niet duizenden, onafhankelijke services die voortdurend data uitwisselen over netwerken. Deze communicatie wordt gefaciliteerd door 'message formats' — afspraken over hoe data wordt gestructureerd en gerepresentereerd tijdens transport.</p>
+          <p>De afgelopen twee decennia is de industrie verschoven van het zware en tekstgebaseerde XML naar het lichtere, maar nog steeds tekstgebaseerde JSON. Hoewel JSON de de facto standaard is geworden voor web-API's vanwege zijn menselijke leesbaarheid en eenvoud, brengt het significante nadelen met zich mee in high-performance scenario's. Tekstgebaseerde formaten vereisen namelijk aanzienlijke CPU-kracht voor serialisatie (het omzetten van een object in het geheugen naar een verstuurbaar formaat) en deserialisatie (het omgekeerde proces). Bovendien zijn ze redundant en nemen ze relatief veel bandbreedte in beslag.</p>
+          <p>Dit onderzoek richt zich op de vraag: Welk message format biedt de beste balans tussen performantie, compactheid en gebruiksgemak binnen verschillende programmeertalen? We duiken diep in de wereld van binaire alternatieven zoals Protobuf, Cap'n Proto en MessagePack om te bepalen wanneer de overstap van JSON naar een binair formaat noodzakelijk is.</p>
+
+          <h3>Technische Focus: De Revolutie van Zero-Copy</h3>
+          <p>Een fascinerend aspect is de 'Zero-Copy' architectuur van Cap'n Proto en FlatBuffers. Waar traditionele formaten een expliciete decodeer-stap vereisen, slaan Zero-Copy formaten data op in een structuur die in het geheugen identiek is aan de representatie op het netwerk.</p>
+          <p>Dit betekent directe toegang tot velden via offsets, zonder parsen. Onze benchmarks bevestigen dit: in Rust bereikte Cap'n Proto een deserialisatie-tijd van slechts 0,0026 ms voor 62KB. Dit maakt hen de "latency kings" voor real-time systemen.</p>
+
+          <h3>Analyse van de Bevindingen</h3>
+          <ul>
+            <li><strong>Rust als Performantie-leider:</strong> Rust presteert consistent het best, vaak factor 2 tot 5 sneller dan Go of Java.</li>
+            <li><strong>Het C-Extension Effect in Python:</strong> MessagePack (0,007 ms) is extreem snel in Python door C-extensies, terwijl Protobuf-serialisatie traag is (2,15 ms).</li>
+            <li><strong>De Geheugen-overhead van Java:</strong> Java verbruikt tot 30x meer geheugen dan Rust, wat kritisch is voor cloud-kosten.</li>
+            <li><strong>De JSON Bottleneck in Go:</strong> De standaard JSON-bibliotheek in Go is een bottleneck; overstap naar Protobuf of Avro levert directe winst op.</li>
+          </ul>
+
+          <h3>Conclusie</h3>
+          <p>Er is geen "one-size-fits-all", maar de transitie naar binaire formaten is essentieel voor performantie. Voor maximale snelheid zijn Rust en Cap'n Proto de winnaars. Protobuf is de beste allrounder voor microservices. Apache Avro is superieur voor Big Data. JSON blijft de koning van publieke API's, maar voor interne communicatie zijn binaire formaten een noodzaak.</p>
         </div>
       </div>
     </section>
 
-    <section id="video" class="section container">
-      <h2>Pitch Video</h2>
+    <section id="team" class="section container">
+      <div data-lang-content="en">
+        <h2>Team Netwerkt</h2>
+        <p class="section-intro">KdG The Lab 2026 - Team 41</p>
+      </div>
+      <div data-lang-content="nl">
+        <h2>Team Netwerkt</h2>
+        <p class="section-intro">KdG The Lab 2026 - Team 41</p>
+      </div>
 
-      <div class="video-frame placeholder" role="region" aria-label="Pitch video placeholder">
-        <div class="play-glyph" aria-hidden="true"></div>
-        <p><strong>Pitch video coming soon</strong></p>
-        <!-- <iframe
-        src="https://www.youtube.com/embed/###"
-        title="Format Benchmarks Pitch"
-        allowfullscreen></iframe> -->      
-     </div>
+      <figure class="team-photo card">
+        <img src="team_pic.jpg" alt="Team Netwerkt group picture">
+        <figcaption>Team Netwerkt - Format Benchmarks</figcaption>
+      </figure>
+
+      <div class="grid cards-3">
+        <article class="card person">
+          <h3>Tom Verschuren</h3>
+          <p data-lang-content="en">Benchmark implementation and performance analysis.</p>
+          <p data-lang-content="nl">Benchmark-implementatie en performantie-analyse.</p>
+        </article> 
+        <article class="card person">
+          <h3>Sefkan Ozmen</h3>
+          <p data-lang-content="en">Project engineering and platform integration.</p>
+          <p data-lang-content="nl">Project engineering en platform-integratie.</p>
+        </article>
+        <article class="card person">
+          <h3>Xander Geluykens</h3>
+          <p data-lang-content="en">Runtime tooling, schema workflows, and delivery.</p>
+          <p data-lang-content="nl">Runtime tooling, schema workflows en oplevering.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="video" class="section section-alt">
+      <div class="container">
+        <h2>Pitch Video</h2>
+
+        <div class="video-frame placeholder" role="region" aria-label="Pitch video placeholder">
+          <div class="play-glyph" aria-hidden="true"></div>
+          <div data-lang-content="en">
+            <p><strong>Pitch video coming soon</strong></p>
+          </div>
+          <div data-lang-content="nl">
+            <p><strong>Pitch video komt binnenkort</strong></p>
+          </div>
+          <!-- <iframe
+          src="https://www.youtube.com/embed/###"
+          title="Format Benchmarks Pitch"
+          allowfullscreen></iframe> -->      
+       </div>
+      </div>
     </section>
   </main>
 
   <footer class="footer">
     <div class="container footer-inner">
       <span>Format Benchmarks</span>
-      <span>MIT License</span>
+      <span data-lang-content="en">MIT License</span>
+      <span data-lang-content="nl">MIT Licentie</span>
       <a href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">github.com/Pefki/FormatBenchmarks</a>
     </div>
   </footer>
+
+  <script>
+    function setLanguage(lang) {
+      document.body.className = 'lang-' + lang;
+      
+      const btns = document.querySelectorAll('.lang-btn');
+      btns.forEach(btn => {
+        if (btn.innerText.toLowerCase() === lang) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Update URL hash without jumping if needed
+      // history.pushState(null, null, '#' + lang);
+    }
+  </script>
 </body>
 </html>
