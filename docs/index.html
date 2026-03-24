@@ -19,12 +19,12 @@
       <div class="nav-links">
         <a href="#project" data-lang-content="en">Project</a>
         <a href="#project" data-lang-content="nl">Project</a>
-        <a href="#team" data-lang-content="en">Team</a>
-        <a href="#team" data-lang-content="nl">Team</a>
-        <a href="#article" data-lang-content="en">Article</a>
-        <a href="#article" data-lang-content="nl">Artikel</a>
         <a href="#video" data-lang-content="en">Pitch Video</a>
         <a href="#video" data-lang-content="nl">Pitch Video</a>
+        <a href="#article" data-lang-content="en">Article</a>
+        <a href="#article" data-lang-content="nl">Artikel</a>
+        <a href="#team" data-lang-content="en">Team</a>
+        <a href="#team" data-lang-content="nl">Team</a>
         <a href="https://github.com/Pefki/FormatBenchmarks" target="_blank" rel="noreferrer">GitHub</a>
         
         <div class="lang-switcher">
@@ -37,7 +37,7 @@
 
   <header class="hero">
     <div class="container hero-content">
-      <p class="kicker">KdG The Lab 2025-2026</p>
+      <p class="kicker">KdG The Lab 2026</p>
       
       <div data-lang-content="en">
         <h1>Benchmarking message formats across runtimes.</h1>
@@ -66,6 +66,32 @@
   </header>
 
   <main>
+    <section id="video" class="section container featured-video">
+      <div class="video-shell card">
+        <div class="video-copy" data-lang-content="en">
+          <p class="kicker">Pitch video</p>
+          <h2>Watch the benchmark platform in action.</h2>
+          <p class="section-intro"></p>
+        </div>
+        <div class="video-copy" data-lang-content="nl">
+          <p class="kicker">Pitch Video</p>
+          <h2>Zie het benchmarkplatform in actie.</h2>
+          <p class="section-intro"></p>
+        </div>
+
+        <div class="video-embed-wrap">
+          <iframe
+            class="video-embed"
+            src="https://www.youtube.com/embed/5vAY8HzvrBM"
+            title="Format Benchmarks Pitch Video"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+      </div>
+    </section>
+
     <section id="project" class="section container">
       <div data-lang-content="en">
         <h2>Project Snapshot</h2>
@@ -130,7 +156,7 @@
           <h2>Navigating the Binary Landscape: A Deep Dive into Message Formats</h2>
           
           <h3>Introduction and Problem Definition</h3>
-          <p>In today's era of microservices, cloud-native applications, and real-time data processing, the efficiency with which systems communicate has become critical. Modern software architectures often consist of hundreds, if not thousands, of independent services that constantly exchange data over networks. This communication is facilitated by 'message formats' — agreements on how data is structured and represented during transport.</p>
+          <p>In today's era of microservices, cloud-native applications, and real-time data processing, the efficiency with which systems communicate has become critical. Modern software architectures often consist of hundreds, if not thousands, of independent services that constantly exchange data over networks. This communication is facilitated by 'message formats' agreements on how data is structured and represented during transport.</p>
           <p>Over the past two decades, the industry has shifted from heavy, text-based XML to lighter, yet still text-based JSON. While JSON has become the de facto standard for web APIs due to its human readability and simplicity, it brings significant disadvantages in high-performance scenarios. Text-based formats require considerable CPU power for serialization (converting an object in memory to a transmittable format) and deserialization (the reverse process). Moreover, they are redundant and consume relatively high bandwidth.</p>
           <p>This research focuses on the question: Which message format offers the best balance between performance, compactness, and ease of use across different programming languages? We dive deep into the world of binary alternatives such as Protobuf, Cap'n Proto, and MessagePack to determine when switching from JSON to a binary format is necessary.</p>
 
@@ -153,7 +179,7 @@
           <h2>Navigeren door het Binaire Landschap: Een Diepgaande Analyse van Message Formats</h2>
           
           <h3>Introductie en Probleemstelling</h3>
-          <p>In het huidige tijdperk van microservices, cloud-native applicaties en real-time dataverwerking is de efficiëntie waarmee systemen onderling communiceren cruciaal geworden. Moderne software-architecturen bestaan vaak uit honderden, zo niet duizenden, onafhankelijke services die voortdurend data uitwisselen over netwerken. Deze communicatie wordt gefaciliteerd door 'message formats' — afspraken over hoe data wordt gestructureerd en gerepresentereerd tijdens transport.</p>
+          <p>In het huidige tijdperk van microservices, cloud-native applicaties en real-time dataverwerking is de efficiëntie waarmee systemen onderling communiceren cruciaal geworden. Moderne software-architecturen bestaan vaak uit honderden, zo niet duizenden, onafhankelijke services die voortdurend data uitwisselen over netwerken. Deze communicatie wordt gefaciliteerd door 'message formats' afspraken over hoe data wordt gestructureerd en gerepresentereerd tijdens transport.</p>
           <p>De afgelopen twee decennia is de industrie verschoven van het zware en tekstgebaseerde XML naar het lichtere, maar nog steeds tekstgebaseerde JSON. Hoewel JSON de de facto standaard is geworden voor web-API's vanwege zijn menselijke leesbaarheid en eenvoud, brengt het significante nadelen met zich mee in high-performance scenario's. Tekstgebaseerde formaten vereisen namelijk aanzienlijke CPU-kracht voor serialisatie (het omzetten van een object in het geheugen naar een verstuurbaar formaat) en deserialisatie (het omgekeerde proces). Bovendien zijn ze redundant en nemen ze relatief veel bandbreedte in beslag.</p>
           <p>Dit onderzoek richt zich op de vraag: Welk message format biedt de beste balans tussen performantie, compactheid en gebruiksgemak binnen verschillende programmeertalen? We duiken diep in de wereld van binaire alternatieven zoals Protobuf, Cap'n Proto en MessagePack om te bepalen wanneer de overstap van JSON naar een binair formaat noodzakelijk is.</p>
 
@@ -185,8 +211,19 @@
       </div>
 
       <figure class="team-photo card">
-        <img src="team_pic.jpg" alt="Team Netwerkt group picture">
-        <figcaption>Team Netwerkt - Format Benchmarks</figcaption>
+        <div class="team-photo-stage">
+          <img src="team_pic.jpg" alt="Team Netwerkt group picture">
+          <a class="headspot headspot-tom" href="https://www.linkedin.com/in/tom-verschuren/" target="_blank" rel="noreferrer" aria-label="Tom Verschuren on LinkedIn">
+            <span>Tom</span>
+          </a>
+          <a class="headspot headspot-sefkan" href="https://www.linkedin.com/in/sefkan-ozmen/" target="_blank" rel="noreferrer" aria-label="Sefkan Ozmen on LinkedIn">
+            <span>Sefkan</span>
+          </a>
+          <a class="headspot headspot-xander" href="https://www.linkedin.com/in/xander-geluykens-a30785225/" target="_blank" rel="noreferrer" aria-label="Xander Geluykens on LinkedIn">
+            <span>Xander</span>
+          </a>
+        </div>
+        <figcaption>Team Netwerkt</figcaption>
       </figure>
 
       <div class="grid cards-3">
@@ -194,33 +231,32 @@
           <h3>Tom Verschuren</h3>
           <p data-lang-content="en">Research and performance analysis that supported in building the benchmark tool.</p>
           <p data-lang-content="nl">Onderzoek en performantie-analyse die Sefkan ondersteunden bij het bouwen van de benchmarktool.</p>
+          <a class="person-linkedin" href="https://www.linkedin.com/in/tom-verschuren/" target="_blank" rel="noreferrer" aria-label="Tom Verschuren LinkedIn">
+            <span class="li-pill">in</span>
+            <span>Connect on LinkedIn</span>
+          </a>
         </article> 
         <article class="card person">
           <h3>Sefkan Ozmen</h3>
           <p data-lang-content="en">Designed and built the benchmark tool with support from team research.</p>
           <p data-lang-content="nl">Ontwierp en bouwde de benchmarktool met ondersteuning van teamonderzoek.</p>
+          <a class="person-linkedin" href="https://www.linkedin.com/in/sefkan-ozmen/" target="_blank" rel="noreferrer" aria-label="Sefkan Ozmen LinkedIn">
+            <span class="li-pill">in</span>
+            <span>Connect on LinkedIn</span>
+          </a>
         </article>
         <article class="card person">
           <h3>Xander Geluykens</h3>
           <p data-lang-content="en">Runtime and schema research that supported in creating the benchmark tool.</p>
           <p data-lang-content="nl">Runtime- en schemaonderzoek dat ondersteunde bij het bouwen van de benchmarktool.</p>
+          <a class="person-linkedin" href="https://www.linkedin.com/in/xander-geluykens-a30785225/" target="_blank" rel="noreferrer" aria-label="Xander Geluykens LinkedIn">
+            <span class="li-pill">in</span>
+            <span>Connect on LinkedIn</span>
+          </a>
         </article>
       </div>
     </section>
 
-    <section id="video" class="section section-alt">
-      <div class="container">
-        <h2>Pitch Video</h2>
-
-        <iframe
-          width="560"
-          height="315"
-          src="https://www.youtube.com/embed/5vAY8HzvrBM"
-          referrerpolicy="strict-origin-when-cross-origin"
-          rel="noreferrer"></iframe>
-        </iframe>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">
